@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routers import members, movies, swipes, watchlist, movie_night, history
+from .routers import members, movies, swipes, watchlist, movie_night, history, watched
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -28,6 +28,7 @@ app.include_router(swipes.router, prefix="/api/swipes", tags=["swipes"])
 app.include_router(watchlist.router, prefix="/api/watchlist", tags=["watchlist"])
 app.include_router(movie_night.router, prefix="/api/movie-night", tags=["movie-night"])
 app.include_router(history.router, prefix="/api/history", tags=["history"])
+app.include_router(watched.router, prefix="/api/watched", tags=["watched"])
 
 
 @app.get("/api/health")
