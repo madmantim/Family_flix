@@ -13,9 +13,10 @@ function MovieCard({
   isTop,
 }: {
   movie: Movie;
-  onSwipe: (direction: SwipeDirection) => void;
+  onSwipe: (direction: SwipeDirection, watched: boolean) => void;
   isTop: boolean;
 }) {
+  const [watched, setWatched] = useState(false);
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
@@ -27,12 +28,12 @@ function MovieCard({
     (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       const threshold = 100;
       if (info.offset.x > threshold) {
-        onSwipe('yes');
+        onSwipe('yes', watched);
       } else if (info.offset.x < -threshold) {
-        onSwipe('no');
+        onSwipe('no', watched);
       }
     },
-    [onSwipe]
+    [onSwipe, watched]
   );
 
   const parseGenres = (genres: string | null): string[] => {
@@ -70,6 +71,16 @@ function MovieCard({
         <motion.div className="swipe-indicator no" style={{ opacity: noOpacity }}>
           NOPE
         </motion.div>
+
+        <button
+          className={`watched-toggle ${watched ? 'active' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setWatched(!watched);
+          }}
+        >
+          👁
+        </button>
       </div>
 
       <div className="info">
@@ -77,7 +88,33 @@ function MovieCard({
         <div className="meta">
           {movie.year && <span>{movie.year}</span>}
           {movie.runtime && <span>{movie.runtime} min</span>}
-          {movie.vote_average && <span>{(movie.vote_average / 10).toFixed(1)}</span>}
+          {movie.vote_average && <span>TMDB {(movie.vote_average / 10).toFixed(1)}</span>}
+          {movie.rt_critic_score && (
+            movie.rt_url ? (
+              <a
+                href={movie.rt_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="rt-score"
+              >
+                🍅 {movie.rt_critic_score}%
+              </a>
+            ) : (
+              <span className="rt-score">🍅 {movie.rt_critic_score}%</span>
+            )
+          )}
+          {movie.trailer_url && (
+            <a
+              href={movie.trailer_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="trailer-link"
+            >
+              ▶ Trailer
+            </a>
+          )}
         </div>
         {movie.genres && (
           <div className="genres">
@@ -110,18 +147,18 @@ export function SwipeScreen() {
   });
 
   const swipeMutation = useMutation({
-    mutationFn: ({ movieId, direction }: { movieId: number; direction: SwipeDirection }) =>
-      recordSwipe(memberId!, movieId, direction),
+    mutationFn: ({ movieId, direction, watched }: { movieId: number; direction: SwipeDirection; watched: boolean }) =>
+      recordSwipe(memberId!, movieId, direction, watched),
     onSuccess: () => {
       setCurrentIndex((i) => i + 1);
     },
   });
 
   const handleSwipe = useCallback(
-    (direction: SwipeDirection) => {
+    (direction: SwipeDirection, watched = false) => {
       const movie = queue?.movies[currentIndex];
       if (movie) {
-        swipeMutation.mutate({ movieId: movie.id, direction });
+        swipeMutation.mutate({ movieId: movie.id, direction, watched });
       }
     },
     [queue, currentIndex, swipeMutation]
@@ -172,7 +209,7 @@ export function SwipeScreen() {
         ) : (
           <>
             {nextMovie && (
-              <MovieCard key={nextMovie.id} movie={nextMovie} onSwipe={() => {}} isTop={false} />
+              <MovieCard key={nextMovie.id} movie={nextMovie} onSwipe={() => { /* empty */ }} isTop={false} />
             )}
             {currentMovie && (
               <MovieCard key={currentMovie.id} movie={currentMovie} onSwipe={handleSwipe} isTop={true} />
