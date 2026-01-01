@@ -1,9 +1,9 @@
 ---
 active: true
 iteration: 1
-max_iterations: 30
-completion_promise: "FAMILY FLIX PICKER COMPLETE"
-started_at: "2026-01-01T06:24:07Z"
+max_iterations: 0
+completion_promise: "FEATURE COMPLETE"
+started_at: "2026-01-01T22:22:20Z"
 ---
 
-Read and implement the task in PROMPT.md
+Implement the per-member watched tracking feature following docs/plans/2026-01-02-per-member-watched-implementation.md. Work through each task sequentially, running tests after each backend change.

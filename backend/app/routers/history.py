@@ -45,6 +45,11 @@ def get_watch_history(
                 "content_rating": movie.content_rating,
                 "runtime": movie.runtime,
                 "genres": movie.genres,
+                "imdb_id": movie.imdb_id,
+                "rt_critic_score": movie.rt_critic_score,
+                "rt_audience_score": movie.rt_audience_score,
+                "rt_url": movie.rt_url,
+                "trailer_url": movie.trailer_url,
                 "created_at": movie.created_at,
                 "poster_url": TMDBService.get_poster_url(movie.poster_path),
                 "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
@@ -113,6 +118,11 @@ def mark_watched(entry: WatchHistoryCreate, db: Session = Depends(get_db)):
             "content_rating": movie.content_rating,
             "runtime": movie.runtime,
             "genres": movie.genres,
+            "imdb_id": movie.imdb_id,
+            "rt_critic_score": movie.rt_critic_score,
+            "rt_audience_score": movie.rt_audience_score,
+            "rt_url": movie.rt_url,
+            "trailer_url": movie.trailer_url,
             "created_at": movie.created_at,
             "poster_url": TMDBService.get_poster_url(movie.poster_path),
             "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)

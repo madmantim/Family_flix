@@ -6,6 +6,7 @@ from ..database import get_db
 from ..models import Movie, WatchlistEntry, Member, ContentRating
 from ..schemas import WatchlistEntryCreate, WatchlistEntryResponse, MovieResponse
 from ..services.tmdb import get_tmdb_service, TMDBService
+from ..services.omdb import get_omdb_service, OMDbService
 
 router = APIRouter()
 
@@ -44,6 +45,11 @@ def get_watchlist(
                 "content_rating": movie.content_rating,
                 "runtime": movie.runtime,
                 "genres": movie.genres,
+                "imdb_id": movie.imdb_id,
+                "rt_critic_score": movie.rt_critic_score,
+                "rt_audience_score": movie.rt_audience_score,
+                "rt_url": movie.rt_url,
+                "trailer_url": movie.trailer_url,
                 "created_at": movie.created_at,
                 "poster_url": TMDBService.get_poster_url(movie.poster_path),
                 "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
@@ -61,7 +67,8 @@ def get_watchlist(
 async def add_to_watchlist(
     entry: WatchlistEntryCreate,
     db: Session = Depends(get_db),
-    tmdb: TMDBService = Depends(get_tmdb_service)
+    tmdb: TMDBService = Depends(get_tmdb_service),
+    omdb: OMDbService = Depends(get_omdb_service)
 ):
     """Add a movie to the pool by TMDB ID"""
     # Validate member exists
@@ -104,6 +111,23 @@ async def add_to_watchlist(
         # Extract genres
         genres = json.dumps([g["name"] for g in tmdb_data.get("genres", [])])
 
+        # Get IMDB ID from TMDB response
+        imdb_id = tmdb_data.get("imdb_id")
+
+        # Fetch Rotten Tomatoes scores from OMDb
+        rt_critic_score = None
+        rt_audience_score = None
+        rt_url = None
+        if imdb_id:
+            omdb_data = await omdb.get_ratings_by_imdb_id(imdb_id)
+            if omdb_data:
+                rt_critic_score = omdb_data.get("rt_critic_score")
+                rt_audience_score = omdb_data.get("rt_audience_score")
+                rt_url = omdb_data.get("rt_url")
+
+        # Extract trailer URL from TMDB videos
+        trailer_url = TMDBService.get_trailer_url(tmdb_data)
+
         movie = Movie(
             tmdb_id=entry.tmdb_id,
             title=tmdb_data["title"],
@@ -114,7 +138,12 @@ async def add_to_watchlist(
             vote_average=int(tmdb_data.get("vote_average", 0) * 10),
             content_rating=content_rating,
             runtime=tmdb_data.get("runtime"),
-            genres=genres
+            genres=genres,
+            imdb_id=imdb_id,
+            rt_critic_score=rt_critic_score,
+            rt_audience_score=rt_audience_score,
+            rt_url=rt_url,
+            trailer_url=trailer_url
         )
         db.add(movie)
         db.commit()
@@ -153,6 +182,11 @@ async def add_to_watchlist(
             "content_rating": movie.content_rating,
             "runtime": movie.runtime,
             "genres": movie.genres,
+            "imdb_id": movie.imdb_id,
+            "rt_critic_score": movie.rt_critic_score,
+            "rt_audience_score": movie.rt_audience_score,
+            "rt_url": movie.rt_url,
+            "trailer_url": movie.trailer_url,
             "created_at": movie.created_at,
             "poster_url": TMDBService.get_poster_url(movie.poster_path),
             "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)

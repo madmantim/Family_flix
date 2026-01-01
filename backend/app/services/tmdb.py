@@ -31,13 +31,34 @@ class TMDBService:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{TMDB_BASE_URL}/movie/{tmdb_id}",
-                params={"append_to_response": "release_dates,credits"},
+                params={"append_to_response": "release_dates,credits,videos"},
                 headers=self.headers
             )
             if response.status_code == 404:
                 return None
             response.raise_for_status()
             return response.json()
+
+    @staticmethod
+    def get_trailer_url(tmdb_data: dict) -> Optional[str]:
+        """Extract YouTube trailer URL from TMDB movie data"""
+        videos = tmdb_data.get("videos", {}).get("results", [])
+
+        # Prefer official trailers, then any trailer, then teasers
+        for video_type in ["Trailer", "Teaser"]:
+            # First try official videos
+            for video in videos:
+                if (video.get("site") == "YouTube" and
+                    video.get("type") == video_type and
+                    video.get("official", False)):
+                    return f"https://www.youtube.com/watch?v={video['key']}"
+            # Then try non-official
+            for video in videos:
+                if (video.get("site") == "YouTube" and
+                    video.get("type") == video_type):
+                    return f"https://www.youtube.com/watch?v={video['key']}"
+
+        return None
 
     async def get_trending(self, time_window: str = "week", page: int = 1) -> dict:
         """Get trending movies"""
