@@ -4,7 +4,7 @@ from typing import List, Dict
 from collections import defaultdict
 import random
 from ..database import get_db
-from ..models import Movie, Member, Swipe, WatchlistEntry, SwipeDirection, ContentRating
+from ..models import Movie, Member, Swipe, WatchlistEntry, SwipeDirection, ContentRating, MemberWatched
 from ..schemas import MovieNightRequest, MovieNightResponse, MatchedMovie, VoteRequest, RunoffResult
 from ..services.tmdb import TMDBService
 
@@ -54,11 +54,38 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
     matches = []
 
     for movie in filtered_movies:
-        yes_votes = db.query(Swipe).filter(
+        # Get yes swipes from present members
+        yes_swipes = db.query(Swipe).filter(
             Swipe.movie_id == movie.id,
             Swipe.member_id.in_(member_ids),
             Swipe.direction == SwipeDirection.YES
-        ).count()
+        ).all()
+
+        yes_member_ids = {s.member_id for s in yes_swipes}
+
+        # Check eligibility: member is eligible if not watched OR would_rewatch=True
+        eligible_count = 0
+        for mid in member_ids:
+            watched = db.query(MemberWatched).filter(
+                MemberWatched.member_id == mid,
+                MemberWatched.movie_id == movie.id
+            ).first()
+
+            if watched is None:
+                # Not watched = eligible (if they swiped yes)
+                if mid in yes_member_ids:
+                    eligible_count += 1
+            elif watched.would_rewatch:
+                # Watched but would rewatch = eligible (if they swiped yes)
+                if mid in yes_member_ids:
+                    eligible_count += 1
+            # else: watched and would not rewatch = not eligible
+
+        # Only include if all present members are eligible and swiped yes
+        all_eligible = eligible_count == len(member_ids)
+
+        if eligible_count == 0:
+            continue  # Skip movies with no eligible members
 
         # Get watchlist entry for source info
         entry = db.query(WatchlistEntry).filter(
@@ -66,13 +93,11 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
             WatchlistEntry.is_active == True
         ).first()
 
-        is_full_match = yes_votes == len(member_ids)
-
         matches.append({
             "movie": movie,
-            "yes_votes": yes_votes,
+            "yes_votes": eligible_count,
             "total_present": len(member_ids),
-            "is_full_match": is_full_match,
+            "is_full_match": all_eligible,
             "source": entry.source if entry else "manual",
             "added_at": entry.added_at if entry else None
         })
@@ -105,6 +130,11 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
                 "content_rating": movie.content_rating,
                 "runtime": movie.runtime,
                 "genres": movie.genres,
+                "imdb_id": movie.imdb_id,
+                "rt_critic_score": movie.rt_critic_score,
+                "rt_audience_score": movie.rt_audience_score,
+                "rt_url": movie.rt_url,
+                "trailer_url": movie.trailer_url,
                 "created_at": movie.created_at,
                 "poster_url": TMDBService.get_poster_url(movie.poster_path),
                 "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
@@ -193,6 +223,11 @@ def get_runoff_result(session_id: str, db: Session = Depends(get_db)):
             "content_rating": movie.content_rating,
             "runtime": movie.runtime,
             "genres": movie.genres,
+            "imdb_id": movie.imdb_id,
+            "rt_critic_score": movie.rt_critic_score,
+            "rt_audience_score": movie.rt_audience_score,
+            "rt_url": movie.rt_url,
+            "trailer_url": movie.trailer_url,
             "created_at": movie.created_at,
             "poster_url": TMDBService.get_poster_url(movie.poster_path),
             "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
