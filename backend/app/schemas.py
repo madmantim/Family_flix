@@ -40,6 +40,11 @@ class MovieBase(BaseModel):
     content_rating: ContentRating = ContentRating.ALL_AGES
     runtime: Optional[int] = None
     genres: Optional[str] = None
+    imdb_id: Optional[str] = None
+    rt_critic_score: Optional[int] = None
+    rt_audience_score: Optional[int] = None
+    rt_url: Optional[str] = None
+    trailer_url: Optional[str] = None
 
 
 class MovieCreate(MovieBase):
@@ -60,6 +65,7 @@ class SwipeCreate(BaseModel):
     member_id: int
     movie_id: int
     direction: SwipeDirection
+    watched: bool = False  # If true, creates MemberWatched record
 
 
 class SwipeResponse(BaseModel):
@@ -154,3 +160,39 @@ class TMDBSearchResponse(BaseModel):
     page: int
     total_pages: int
     total_results: int
+
+
+# Member Watched schemas
+class MemberWatchedCreate(BaseModel):
+    member_id: int
+    movie_id: int
+    would_rewatch: bool = False
+
+
+class MemberWatchedUpdate(BaseModel):
+    would_rewatch: bool
+
+
+class MemberWatchedResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    member_id: int
+    movie_id: int
+    watched_at: datetime
+    would_rewatch: bool
+
+
+class MemberWatchedWithMovie(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    movie: MovieResponse
+    watched_at: datetime
+    would_rewatch: bool
+
+
+class MarkWatchedRequest(BaseModel):
+    movie_id: int
+    member_ids: List[int]
+    would_rewatch: bool = False
