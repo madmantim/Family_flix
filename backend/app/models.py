@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -31,6 +31,7 @@ class Member(Base):
 
     swipes = relationship("Swipe", back_populates="member")
     watchlist_additions = relationship("WatchlistEntry", back_populates="added_by")
+    watched_movies = relationship("MemberWatched", back_populates="member")
 
 
 class Movie(Base):
@@ -48,12 +49,18 @@ class Movie(Base):
     content_rating = Column(SQLEnum(ContentRating), default=ContentRating.ALL_AGES)
     runtime = Column(Integer, nullable=True)  # Minutes
     genres = Column(String(500), nullable=True)  # JSON string
+    imdb_id = Column(String(20), nullable=True)  # For OMDb lookup
+    rt_critic_score = Column(Integer, nullable=True)  # Rotten Tomatoes Tomatometer (0-100)
+    rt_audience_score = Column(Integer, nullable=True)  # Rotten Tomatoes Audience Score (0-100)
+    rt_url = Column(String(500), nullable=True)  # Link to RT page
+    trailer_url = Column(String(500), nullable=True)  # YouTube trailer URL
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     swipes = relationship("Swipe", back_populates="movie")
     watchlist_entries = relationship("WatchlistEntry", back_populates="movie")
     watch_history = relationship("WatchHistory", back_populates="movie")
+    member_watched = relationship("MemberWatched", back_populates="movie")
 
 
 class WatchlistEntry(Base):
@@ -101,3 +108,21 @@ class WatchHistory(Base):
     watchers = Column(String(500), nullable=True)  # JSON array of member IDs
 
     movie = relationship("Movie", back_populates="watch_history")
+
+
+class MemberWatched(Base):
+    """Per-member watched status for movies"""
+    __tablename__ = "member_watched"
+
+    id = Column(Integer, primary_key=True, index=True)
+    member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
+    movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False)
+    watched_at = Column(DateTime, default=datetime.utcnow)
+    would_rewatch = Column(Boolean, default=False)
+
+    member = relationship("Member", back_populates="watched_movies")
+    movie = relationship("Movie", back_populates="member_watched")
+
+    __table_args__ = (
+        UniqueConstraint('member_id', 'movie_id', name='unique_member_movie_watched'),
+    )
