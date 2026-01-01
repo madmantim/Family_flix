@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0a0a0a;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Disable text selection on interactive elements */
+button,
+.member-card,
+.movie-card,
+.vote-card {
+  user-select: none;
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #e50914;
+  outline-offset: 2px;
+}
+
+/* Responsive text */
+@media (max-width: 360px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 600px) {
+  html {
+    font-size: 18px;
+  }
+}

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - TMDB_ACCESS_TOKEN=${TMDB_ACCESS_TOKEN}
+      - DATABASE_URL=sqlite:///./data/family_flix.db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Nginx reverse proxy (optional - for production)
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf
+  #   depends_on:
+  #     - backend
+  #     - frontend

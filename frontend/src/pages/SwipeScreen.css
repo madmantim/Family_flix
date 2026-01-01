@@ -1,0 +1,231 @@
+.swipe-screen {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 100%);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.swipe-screen.loading {
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 1.2rem;
+}
+
+.swipe-screen header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  padding-top: calc(env(safe-area-inset-top, 0) + 1rem);
+}
+
+.swipe-screen header .back {
+  background: none;
+  border: none;
+  color: #e50914;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.swipe-screen header .member-name {
+  color: #fff;
+  font-weight: 600;
+}
+
+.swipe-screen header .count {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.card-stack {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.movie-card {
+  position: absolute;
+  width: calc(100% - 2rem);
+  max-width: 360px;
+  background: #1a1a2e;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+}
+
+.movie-card:active {
+  cursor: grabbing;
+}
+
+.movie-card .poster {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a3e;
+}
+
+.movie-card .no-poster {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 1.2rem;
+}
+
+.swipe-indicator {
+  position: absolute;
+  top: 2rem;
+  padding: 0.5rem 1.5rem;
+  font-size: 2rem;
+  font-weight: 800;
+  border-radius: 8px;
+  border: 4px solid;
+  transform: rotate(-15deg);
+}
+
+.swipe-indicator.yes {
+  right: 1rem;
+  color: #4ade80;
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.2);
+}
+
+.swipe-indicator.no {
+  left: 1rem;
+  color: #f87171;
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.2);
+  transform: rotate(15deg);
+}
+
+.movie-card .info {
+  padding: 1.25rem;
+}
+
+.movie-card h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.movie-card .meta {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.movie-card .genres {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.movie-card .genre {
+  padding: 0.25rem 0.75rem;
+  background: rgba(229, 9, 20, 0.2);
+  color: #e50914;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.movie-card .overview {
+  margin-top: 0.75rem;
+  color: #aaa;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.button-row {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  padding: 1.5rem;
+}
+
+.swipe-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swipe-btn.no {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+.swipe-btn.yes {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+}
+
+.empty-state h2 {
+  color: #fff;
+  margin: 0 0 0.5rem;
+}
+
+.empty-state p {
+  color: #888;
+  margin: 0 0 1.5rem;
+}
+
+.empty-state button {
+  background: #e50914;
+  color: #fff;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bottom-nav button {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.bottom-nav button.active {
+  color: #e50914;
+}

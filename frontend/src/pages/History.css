@@ -1,0 +1,135 @@
+.history-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 100%);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 80px);
+}
+
+.history-page header {
+  padding: 1rem;
+  padding-top: calc(env(safe-area-inset-top, 0) + 1rem);
+}
+
+.history-page header h1 {
+  color: #fff;
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.stats-card {
+  display: flex;
+  gap: 1rem;
+  margin: 0 1rem 1.5rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, rgba(229, 9, 20, 0.2), rgba(229, 9, 20, 0.05));
+  border: 1px solid rgba(229, 9, 20, 0.3);
+  border-radius: 16px;
+}
+
+.stats-card .stat {
+  flex: 1;
+  text-align: center;
+}
+
+.stats-card .value {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.stats-card .label {
+  display: block;
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
+
+.history-page .loading,
+.history-page .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #888;
+}
+
+.history-page .empty button {
+  margin-top: 1rem;
+  background: #e50914;
+  color: #fff;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.history-list {
+  padding: 0 1rem;
+}
+
+.history-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.history-item .poster {
+  width: 60px;
+  height: 90px;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a3e;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.history-item .info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.history-item h3 {
+  color: #fff;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.history-item .date {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.history-page .bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 0.75rem;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 0.75rem);
+  background: rgba(0, 0, 0, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.history-page .bottom-nav button {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.history-page .bottom-nav button.active {
+  color: #e50914;
+}

@@ -1,0 +1,314 @@
+.movie-night-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 100%);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 80px);
+}
+
+.movie-night-page .stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  padding-top: calc(env(safe-area-inset-top, 0) + 1.5rem);
+}
+
+.movie-night-page h1 {
+  color: #fff;
+  margin: 0;
+  font-size: 2rem;
+  text-align: center;
+}
+
+.movie-night-page .stage > p {
+  color: #888;
+  text-align: center;
+  margin: 0.5rem 0 2rem;
+}
+
+.member-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.member-chip {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.member-chip.selected {
+  background: rgba(229, 9, 20, 0.15);
+  border-color: #e50914;
+}
+
+.member-chip .avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e50914, #ff6b6b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+}
+
+.member-chip .name {
+  flex: 1;
+  color: #fff;
+  font-size: 1.1rem;
+  text-align: left;
+}
+
+.member-chip .check {
+  color: #e50914;
+  font-size: 1.4rem;
+}
+
+.start-btn {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: #e50914;
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Matches stage */
+.matches-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.match-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  margin-bottom: 0.75rem;
+}
+
+.match-card .poster {
+  width: 80px;
+  height: 120px;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a3e;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.match-card .info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.match-card h3 {
+  color: #fff;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.match-card .year {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.match-card .badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.match-card .badge.full {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.match-card .badge.partial {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+/* Voting stage */
+.voting-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  flex: 1;
+}
+
+.vote-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vote-card.voted {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.vote-card .poster {
+  position: relative;
+  aspect-ratio: 2/3;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a3e;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.vote-card .voted-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(74, 222, 128, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vote-card .voted-overlay span {
+  font-size: 3rem;
+  color: #fff;
+}
+
+.vote-card .title {
+  color: #fff;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: center;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Winner stage */
+.winner-stage {
+  align-items: center;
+  justify-content: center;
+}
+
+.confetti {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.winner-card {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.winner-card .poster {
+  width: 200px;
+  height: 300px;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a3e;
+  border-radius: 16px;
+  margin: 0 auto 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.winner-card h2 {
+  color: #fff;
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.winner-card .year {
+  color: #888;
+  margin: 0.25rem 0;
+}
+
+.winner-card .tie-note {
+  color: #fbbf24;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.winner-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.watched-btn {
+  padding: 1.25rem;
+  background: #4ade80;
+  color: #000;
+  border: none;
+  border-radius: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.skip-btn {
+  padding: 1rem;
+  background: transparent;
+  color: #888;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Nav */
+.movie-night-page .bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 0.75rem;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 0.75rem);
+  background: rgba(0, 0, 0, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.movie-night-page .bottom-nav button {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.movie-night-page .bottom-nav button.active {
+  color: #e50914;
+}
