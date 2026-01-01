@@ -18,6 +18,12 @@
   font-size: 1.8rem;
 }
 
+.watchlist-page .header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .watchlist-page .add-btn {
   background: #e50914;
   color: #fff;
@@ -27,6 +33,21 @@
   font-weight: 600;
   border-radius: 10px;
   cursor: pointer;
+}
+
+.show-watched-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #888;
+  cursor: pointer;
+}
+
+.show-watched-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: #e50914;
 }
 
 .watchlist-page .loading,
@@ -266,5 +287,69 @@
 }
 
 .watchlist-page .bottom-nav button.active {
+  color: #e50914;
+}
+
+.watched-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.watched-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #1a1a2e;
+  border-radius: 12px;
+}
+
+.watched-item .poster {
+  width: 50px;
+  height: 75px;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a3e;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.watched-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.watched-info h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.watched-info p {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.rewatch-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #888;
+  font-size: 1.5rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.rewatch-btn.active {
+  background: rgba(229, 9, 20, 0.2);
   color: #e50914;
 }

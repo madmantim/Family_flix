@@ -7,9 +7,11 @@ import {
   searchMovies,
   addToWatchlist,
   removeFromWatchlist,
+  getMemberWatched,
+  updateWouldRewatch,
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
-import type { TMDBSearchResult } from '../types';
+import type { TMDBSearchResult, MemberWatched } from '../types';
 import './Watchlist.css';
 
 export function Watchlist() {
@@ -20,10 +22,25 @@ export function Watchlist() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TMDBSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showWatched, setShowWatched] = useState(false);
 
   const { data: watchlist, isLoading } = useQuery({
     queryKey: ['watchlist'],
     queryFn: () => getWatchlist(true),
+  });
+
+  const { data: watchedMovies } = useQuery({
+    queryKey: ['memberWatched', memberId],
+    queryFn: () => getMemberWatched(memberId!),
+    enabled: !!memberId && showWatched,
+  });
+
+  const updateRewatchMutation = useMutation({
+    mutationFn: ({ movieId, wouldRewatch }: { movieId: number; wouldRewatch: boolean }) =>
+      updateWouldRewatch(memberId!, movieId, wouldRewatch),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['memberWatched', memberId] });
+    },
   });
 
   const addMutation = useMutation({
@@ -67,13 +84,59 @@ export function Watchlist() {
   return (
     <div className="watchlist-page">
       <header>
-        <h1>Watchlist</h1>
-        <button className="add-btn" onClick={() => setShowSearch(true)}>
-          + Add
-        </button>
+        <h1>{showWatched ? 'Watched' : 'Watchlist'}</h1>
+        <div className="header-controls">
+          <label className="show-watched-toggle">
+            <span>Show Watched</span>
+            <input
+              type="checkbox"
+              checked={showWatched}
+              onChange={(e) => setShowWatched(e.target.checked)}
+            />
+          </label>
+          {!showWatched && (
+            <button className="add-btn" onClick={() => setShowSearch(true)}>
+              + Add
+            </button>
+          )}
+        </div>
       </header>
 
-      {isLoading ? (
+      {showWatched ? (
+        <div className="watched-list">
+          {watchedMovies?.length === 0 ? (
+            <div className="empty">
+              <p>No watched movies yet</p>
+            </div>
+          ) : (
+            watchedMovies?.map((item) => (
+              <div key={item.id} className="watched-item">
+                <div
+                  className="poster"
+                  style={{
+                    backgroundImage: item.movie.poster_url
+                      ? `url(${item.movie.poster_url})`
+                      : undefined,
+                  }}
+                />
+                <div className="watched-info">
+                  <h3>{item.movie.title}</h3>
+                  <p>Watched {new Date(item.watched_at).toLocaleDateString()}</p>
+                </div>
+                <button
+                  className={`rewatch-btn ${item.would_rewatch ? 'active' : ''}`}
+                  onClick={() => updateRewatchMutation.mutate({
+                    movieId: item.movie.id,
+                    wouldRewatch: !item.would_rewatch
+                  })}
+                >
+                  {item.would_rewatch ? '♥' : '♡'}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      ) : isLoading ? (
         <div className="loading">Loading...</div>
       ) : watchlist?.length === 0 ? (
         <div className="empty">
