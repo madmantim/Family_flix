@@ -8,13 +8,13 @@ import {
   startRunoff,
   castVote,
   getRunoffResult,
-  markWatched,
+  markMovieWatched,
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import type { MatchedMovie, RunoffResult } from '../types';
 import './MovieNight.css';
 
-type Stage = 'select' | 'matches' | 'voting' | 'winner';
+type Stage = 'select' | 'matches' | 'voting' | 'winner' | 'completion';
 
 export function MovieNight() {
   const navigate = useNavigate();
@@ -25,6 +25,7 @@ export function MovieNight() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [votedMovie, setVotedMovie] = useState<number | null>(null);
   const [result, setResult] = useState<RunoffResult | null>(null);
+  const [selectedWatchers, setSelectedWatchers] = useState<number[]>([]);
 
   const { data: members } = useQuery({
     queryKey: ['members'],
@@ -73,11 +74,12 @@ export function MovieNight() {
   });
 
   const watchedMutation = useMutation({
-    mutationFn: () => markWatched(result!.winner.id, selectedMembers),
+    mutationFn: () => markMovieWatched(result!.winner.id, selectedWatchers, false),
     onSuccess: () => {
       // Reset and go back
       setStage('select');
       setSelectedMembers([]);
+      setSelectedWatchers([]);
       setMatches([]);
       setResult(null);
       setVotedMovie(null);
@@ -87,6 +89,12 @@ export function MovieNight() {
 
   const toggleMember = (id: number) => {
     setSelectedMembers((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
+    );
+  };
+
+  const toggleWatcher = (id: number) => {
+    setSelectedWatchers((prev) =>
       prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
     );
   };
@@ -294,11 +302,14 @@ export function MovieNight() {
             <div className="winner-actions">
               <motion.button
                 className="watched-btn"
-                onClick={() => watchedMutation.mutate()}
+                onClick={() => {
+                  setSelectedWatchers([...selectedMembers]);
+                  setStage('completion');
+                }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                {watchedMutation.isPending ? 'Marking...' : 'Mark as Watched'}
+                Mark as Watched
               </motion.button>
               <button
                 className="skip-btn"
@@ -309,7 +320,68 @@ export function MovieNight() {
                   setResult(null);
                 }}
               >
-                Pick Another
+                Done
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {stage === 'completion' && result && (
+          <motion.div
+            key="completion"
+            className="stage completion-stage"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <h1>Who watched it?</h1>
+
+            <div className="completion-poster">
+              <div
+                className="poster"
+                style={{
+                  backgroundImage: result.winner.poster_url
+                    ? `url(${result.winner.poster_url})`
+                    : undefined,
+                }}
+              />
+              <h3>{result.winner.title}</h3>
+            </div>
+
+            <div className="watcher-checkboxes">
+              {members?.map((member) => (
+                <label key={member.id} className="watcher-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedWatchers.includes(member.id)}
+                    onChange={() => toggleWatcher(member.id)}
+                  />
+                  <span>{member.name}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="completion-actions">
+              <motion.button
+                className="confirm-watched-btn"
+                onClick={() => watchedMutation.mutate()}
+                disabled={selectedWatchers.length === 0 || watchedMutation.isPending}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {watchedMutation.isPending ? 'Marking...' : 'Confirm Watched'}
+              </motion.button>
+              <button
+                className="skip-btn"
+                onClick={() => {
+                  setStage('select');
+                  setSelectedMembers([]);
+                  setSelectedWatchers([]);
+                  setMatches([]);
+                  setResult(null);
+                }}
+              >
+                Skip
               </button>
             </div>
           </motion.div>

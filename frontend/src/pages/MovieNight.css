@@ -312,3 +312,84 @@
 .movie-night-page .bottom-nav button.active {
   color: #e50914;
 }
+
+/* Completion stage */
+.completion-stage {
+  align-items: center;
+}
+
+.completion-poster {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.completion-poster .poster {
+  width: 120px;
+  height: 180px;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a3e;
+  border-radius: 12px;
+  margin: 0 auto 1rem;
+}
+
+.completion-poster h3 {
+  color: #fff;
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.watcher-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 2rem;
+}
+
+.watcher-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #1a1a2e;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.watcher-checkbox input {
+  width: 20px;
+  height: 20px;
+  accent-color: #e50914;
+}
+
+.watcher-checkbox span {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.completion-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.confirm-watched-btn {
+  background: #e50914;
+  color: #fff;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.confirm-watched-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
