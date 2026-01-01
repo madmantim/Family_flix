@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
-from ..models import Swipe, Movie, Member, WatchlistEntry, SwipeDirection
+from ..models import Swipe, Movie, Member, WatchlistEntry, SwipeDirection, MemberWatched
 from ..schemas import SwipeCreate, SwipeResponse, SwipeQueueResponse, MovieResponse
 from ..services.tmdb import TMDBService
 
@@ -29,15 +29,34 @@ def create_swipe(swipe: SwipeCreate, db: Session = Depends(get_db)):
     ).first()
 
     if existing:
-        # Update existing swipe
-        existing.direction = swipe.direction
-        db.commit()
-        db.refresh(existing)
-        return existing
+        raise HTTPException(status_code=400, detail="Already swiped on this movie")
 
-    # Create new swipe
-    db_swipe = Swipe(**swipe.model_dump())
+    # Create swipe
+    db_swipe = Swipe(
+        member_id=swipe.member_id,
+        movie_id=swipe.movie_id,
+        direction=swipe.direction
+    )
     db.add(db_swipe)
+
+    # If watched flag is set, create/update MemberWatched record
+    if swipe.watched:
+        would_rewatch = swipe.direction == SwipeDirection.YES
+        existing_watched = db.query(MemberWatched).filter(
+            MemberWatched.member_id == swipe.member_id,
+            MemberWatched.movie_id == swipe.movie_id
+        ).first()
+
+        if existing_watched:
+            existing_watched.would_rewatch = would_rewatch
+        else:
+            watched_record = MemberWatched(
+                member_id=swipe.member_id,
+                movie_id=swipe.movie_id,
+                would_rewatch=would_rewatch
+            )
+            db.add(watched_record)
+
     db.commit()
     db.refresh(db_swipe)
     return db_swipe
@@ -84,6 +103,11 @@ def get_swipe_queue(member_id: int, limit: int = 20, db: Session = Depends(get_d
             "content_rating": movie.content_rating,
             "runtime": movie.runtime,
             "genres": movie.genres,
+            "imdb_id": movie.imdb_id,
+            "rt_critic_score": movie.rt_critic_score,
+            "rt_audience_score": movie.rt_audience_score,
+            "rt_url": movie.rt_url,
+            "trailer_url": movie.trailer_url,
             "created_at": movie.created_at,
             "poster_url": TMDBService.get_poster_url(movie.poster_path),
             "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
