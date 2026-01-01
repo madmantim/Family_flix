@@ -23,6 +23,11 @@ export interface Movie {
   content_rating: ContentRating;
   runtime: number | null;
   genres: string | null;
+  imdb_id: string | null;
+  rt_critic_score: number | null;
+  rt_audience_score: number | null;
+  rt_url: string | null;
+  trailer_url: string | null;
   created_at: string;
 }
 
@@ -48,6 +53,13 @@ export interface WatchHistory {
   movie: Movie;
   watched_at: string;
   watchers: string | null;
+}
+
+export interface MemberWatched {
+  id: number;
+  movie: Movie;
+  watched_at: string;
+  would_rewatch: boolean;
 }
 
 export interface MatchedMovie {
