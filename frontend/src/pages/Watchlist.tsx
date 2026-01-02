@@ -79,7 +79,6 @@ export function Watchlist() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['swipeQueue'] });
       queryClient.invalidateQueries({ queryKey: ['memberSwipes', memberId] });
-      setSelectedEntry(null);
     },
   });
 
