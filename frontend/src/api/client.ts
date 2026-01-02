@@ -3,10 +3,8 @@ import type {
   Member,
   Movie,
   WatchlistEntry,
-  WatchHistory,
   SwipeQueue,
   MovieNightResponse,
-  RunoffResult,
   TMDBSearchResponse,
   WatchStats,
   SwipeDirection,
@@ -30,6 +28,14 @@ export const createMember = (data: { name: string; content_filter?: string }) =>
 export const updateMember = (id: number, data: Partial<Member>) =>
   api.patch<Member>(`/members/${id}`, data).then(r => r.data);
 export const deleteMember = (id: number) => api.delete(`/members/${id}`);
+export const uploadAvatar = async (memberId: number, file: File): Promise<Member> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post<Member>(`/members/${memberId}/avatar`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
 
 // Movies
 export const searchMovies = (query: string, page = 1) =>
@@ -54,19 +60,11 @@ export const removeFromWatchlist = (entryId: number) => api.delete(`/watchlist/$
 // Movie Night
 export const getMatches = (presentMemberIds: number[]) =>
   api.post<MovieNightResponse>('/movie-night/matches', { present_member_ids: presentMemberIds }).then(r => r.data);
-export const startRunoff = (presentMemberIds: number[]) =>
-  api.post<{ session_id: string }>('/movie-night/start-runoff', { present_member_ids: presentMemberIds }).then(r => r.data);
-export const castVote = (sessionId: string, memberId: number, movieId: number) =>
-  api.post(`/movie-night/vote/${sessionId}`, { member_id: memberId, movie_id: movieId }).then(r => r.data);
-export const getRunoffResult = (sessionId: string) =>
-  api.post<RunoffResult>(`/movie-night/result/${sessionId}`).then(r => r.data);
 
-// History
+// History (now derived from MemberWatched)
 export const getWatchHistory = (year?: number, limit = 50) =>
-  api.get<WatchHistory[]>('/history', { params: { year, limit } }).then(r => r.data);
-export const getWatchStats = () => api.get<WatchStats>('/history/stats').then(r => r.data);
-export const markWatched = (movieId: number, watcherIds: number[]) =>
-  api.post<WatchHistory>('/history', { movie_id: movieId, watcher_ids: watcherIds }).then(r => r.data);
+  api.get<MemberWatched[]>('/watched/history/all', { params: { year, limit } }).then(r => r.data);
+export const getWatchStats = () => api.get<WatchStats>('/watched/history/stats').then(r => r.data);
 
 // Member Watched
 export const getMemberWatched = (memberId: number) =>
