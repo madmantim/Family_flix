@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Literal, Optional
+from datetime import datetime, timedelta
 from ..database import get_db
 from ..models import Movie
 from ..schemas import MovieResponse, TMDBSearchResponse, TMDBSearchResult
@@ -43,6 +44,56 @@ async def get_trending(
 ):
     """Get trending movies from TMDB"""
     results = await tmdb.get_trending("week", page)
+
+    return TMDBSearchResponse(
+        results=[
+            TMDBSearchResult(
+                tmdb_id=m["id"],
+                title=m["title"],
+                year=int(m["release_date"][:4]) if m.get("release_date") else None,
+                overview=m.get("overview"),
+                poster_url=tmdb.get_poster_url(m.get("poster_path")),
+                vote_average=m.get("vote_average")
+            )
+            for m in results.get("results", [])
+        ],
+        page=results.get("page", 1),
+        total_pages=results.get("total_pages", 0),
+        total_results=results.get("total_results", 0)
+    )
+
+
+@router.get("/discover", response_model=TMDBSearchResponse)
+async def discover_movies(
+    tab: Literal["popular", "highly-rated"] = Query(..., description="Tab: 'popular' or 'highly-rated'"),
+    page: int = Query(1, ge=1),
+    tmdb: TMDBService = Depends(get_tmdb_service)
+):
+    """Discover movies available for home viewing (streaming/VOD/disc)"""
+    # Calculate date range (last 90 days)
+    today = datetime.now()
+    ninety_days_ago = today - timedelta(days=90)
+
+    release_date_gte = ninety_days_ago.strftime("%Y-%m-%d")
+    release_date_lte = today.strftime("%Y-%m-%d")
+
+    if tab == "popular":
+        results = await tmdb.discover_movies(
+            sort_by="popularity.desc",
+            release_date_gte=release_date_gte,
+            release_date_lte=release_date_lte,
+            with_release_type="4|5",
+            page=page
+        )
+    else:  # highly-rated
+        results = await tmdb.discover_movies(
+            sort_by="vote_average.desc",
+            release_date_gte=release_date_gte,
+            release_date_lte=release_date_lte,
+            vote_count_gte=50,
+            with_release_type="4|5",
+            page=page
+        )
 
     return TMDBSearchResponse(
         results=[
