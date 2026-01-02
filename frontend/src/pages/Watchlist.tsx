@@ -16,8 +16,16 @@ import {
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { MovieDetailCard } from '../components/MovieDetailCard';
+import { HelpTooltip } from '../components/HelpTooltip';
 import type { TMDBSearchResult, WatchlistEntry, SwipeDirection } from '../types';
 import './Watchlist.css';
+
+const WATCHLIST_HELP_ITEMS = [
+  { icon: '✕', label: 'Pass' },
+  { icon: '♥', label: 'Watch / Rewatch' },
+  { icon: '👁', label: 'Seen it' },
+  { icon: '🗑', label: 'Remove' },
+];
 
 export function Watchlist() {
   const navigate = useNavigate();
@@ -121,6 +129,7 @@ export function Watchlist() {
       <header>
         <h1>{showWatched ? 'Watched' : 'Watchlist'}</h1>
         <div className="header-controls">
+          <HelpTooltip items={WATCHLIST_HELP_ITEMS} />
           <label className="show-watched-toggle">
             <span>Show Watched</span>
             <input
