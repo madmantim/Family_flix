@@ -10,7 +10,7 @@ import {
   getMemberWatched,
   updateWouldRewatch,
   recordSwipe,
-  markMovieWatched,
+  toggleWatched,
   removeWatched,
   getMemberSwipes,
 } from '../api/client';
@@ -84,10 +84,9 @@ export function Watchlist() {
   });
 
   const watchedMutation = useMutation({
-    mutationFn: (movieId: number) => markMovieWatched(movieId, [memberId!], false),
+    mutationFn: (movieId: number) => toggleWatched(memberId!, movieId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['memberWatched', memberId] });
-      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
     },
   });
 

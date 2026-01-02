@@ -220,9 +220,46 @@ def update_would_rewatch(
     return watched
 
 
+@router.put("/{member_id}/{movie_id}", response_model=MemberWatchedResponse)
+def toggle_watched(member_id: int, movie_id: int, db: Session = Depends(get_db)):
+    """
+    Simple watched toggle - marks movie as watched for a member.
+    No side effects (doesn't affect watchlist or swipes).
+    Use DELETE to unmark.
+    """
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    movie = db.query(Movie).filter(Movie.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+
+    # Check if already watched
+    existing = db.query(MemberWatched).filter(
+        MemberWatched.member_id == member_id,
+        MemberWatched.movie_id == movie_id
+    ).first()
+
+    if existing:
+        return existing
+
+    # Create new watched record (no side effects)
+    watched = MemberWatched(
+        member_id=member_id,
+        movie_id=movie_id,
+        would_rewatch=False
+    )
+    db.add(watched)
+    db.commit()
+    db.refresh(watched)
+
+    return watched
+
+
 @router.delete("/{member_id}/{movie_id}", status_code=204)
 def remove_watched(member_id: int, movie_id: int, db: Session = Depends(get_db)):
-    """Remove watched status for a member (rarely used)"""
+    """Remove watched status for a member"""
     watched = db.query(MemberWatched).filter(
         MemberWatched.member_id == member_id,
         MemberWatched.movie_id == movie_id

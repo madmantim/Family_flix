@@ -81,3 +81,6 @@ export const updateWouldRewatch = (memberId: number, movieId: number, wouldRewat
 
 export const removeWatched = (memberId: number, movieId: number) =>
   api.delete(`/watched/${memberId}/${movieId}`);
+
+export const toggleWatched = (memberId: number, movieId: number) =>
+  api.put(`/watched/${memberId}/${movieId}`).then(r => r.data);
