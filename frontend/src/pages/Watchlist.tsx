@@ -9,9 +9,12 @@ import {
   removeFromWatchlist,
   getMemberWatched,
   updateWouldRewatch,
+  recordSwipe,
+  markMovieWatched,
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
-import type { TMDBSearchResult, MemberWatched } from '../types';
+import { MovieDetailCard } from '../components/MovieDetailCard';
+import type { TMDBSearchResult, WatchlistEntry, SwipeDirection } from '../types';
 import './Watchlist.css';
 
 export function Watchlist() {
@@ -23,6 +26,8 @@ export function Watchlist() {
   const [searchResults, setSearchResults] = useState<TMDBSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showWatched, setShowWatched] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<WatchlistEntry | null>(null);
+  const [detailWatched, setDetailWatched] = useState(false);
 
   const { data: watchlist, isLoading } = useQuery({
     queryKey: ['watchlist'],
@@ -58,6 +63,23 @@ export function Watchlist() {
     mutationFn: (entryId: number) => removeFromWatchlist(entryId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+    },
+  });
+
+  const swipeMutation = useMutation({
+    mutationFn: ({ movieId, direction }: { movieId: number; direction: SwipeDirection }) =>
+      recordSwipe(memberId!, movieId, direction, false),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['swipeQueue'] });
+      setSelectedEntry(null);
+    },
+  });
+
+  const watchedMutation = useMutation({
+    mutationFn: (movieId: number) => markMovieWatched(movieId, [memberId!], false),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['memberWatched', memberId] });
+      setDetailWatched(true);
     },
   });
 
@@ -160,11 +182,18 @@ export function Watchlist() {
                     ? `url(${entry.movie.poster_url})`
                     : undefined,
                 }}
+                onClick={() => {
+                  setSelectedEntry(entry);
+                  setDetailWatched(false);
+                }}
               >
                 {!entry.movie.poster_url && <span>No Poster</span>}
                 <button
                   className="remove-btn"
-                  onClick={() => removeMutation.mutate(entry.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeMutation.mutate(entry.id);
+                  }}
                 >
                   ✕
                 </button>
@@ -238,6 +267,27 @@ export function Watchlist() {
               </button>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedEntry && (
+          <MovieDetailCard
+            entry={selectedEntry}
+            watched={detailWatched}
+            isPending={swipeMutation.isPending || removeMutation.isPending || watchedMutation.isPending}
+            onClose={() => setSelectedEntry(null)}
+            onSwipe={(direction) => swipeMutation.mutate({ movieId: selectedEntry.movie.id, direction })}
+            onRemove={() => {
+              removeMutation.mutate(selectedEntry.id);
+              setSelectedEntry(null);
+            }}
+            onWatchedToggle={() => {
+              if (!detailWatched) {
+                watchedMutation.mutate(selectedEntry.movie.id);
+              }
+            }}
+          />
         )}
       </AnimatePresence>
 

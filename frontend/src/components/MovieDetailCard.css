@@ -1,0 +1,204 @@
+/* frontend/src/components/MovieDetailCard.css */
+.movie-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.movie-detail-card {
+  width: 100%;
+  max-width: 400px;
+  max-height: 95vh;
+  background: #1a1a2e;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.movie-detail-card .poster {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  max-height: 50vh;
+  background-size: cover;
+  background-position: center top;
+  background-color: #2a2a3e;
+  flex-shrink: 0;
+}
+
+.movie-detail-card .no-poster {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 1.2rem;
+}
+
+.movie-detail-card .close-btn {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.movie-detail-card .watched-toggle {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  transition: all 0.2s ease;
+}
+
+.movie-detail-card .watched-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.movie-detail-card .watched-toggle.active {
+  background: rgba(229, 9, 20, 0.9);
+  border-color: #e50914;
+  color: #fff;
+}
+
+.movie-detail-card .info {
+  padding: 1rem;
+  flex-shrink: 1;
+  overflow: hidden;
+}
+
+.movie-detail-card h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.movie-detail-card .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.movie-detail-card .meta .rt-score {
+  color: #fa320a;
+  text-decoration: none;
+}
+
+.movie-detail-card .meta a.rt-score:hover {
+  text-decoration: underline;
+}
+
+.movie-detail-card .meta .trailer-link {
+  color: #ff0000;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.movie-detail-card .meta .trailer-link:hover {
+  text-decoration: underline;
+}
+
+.movie-detail-card .genres {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.movie-detail-card .genre {
+  padding: 0.2rem 0.6rem;
+  background: rgba(229, 9, 20, 0.2);
+  color: #e50914;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.movie-detail-card .overview {
+  margin-top: 0.5rem;
+  color: #aaa;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.action-row {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  padding: 1rem;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 1rem);
+  background: #1a1a2e;
+}
+
+.action-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn.no {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+.action-btn.yes {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.action-btn.remove {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #888;
+  font-size: 1.2rem;
+}
