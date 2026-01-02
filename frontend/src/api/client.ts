@@ -12,7 +12,7 @@ import type {
   Swipe,
 } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -67,9 +67,10 @@ export const getMatches = (presentMemberIds: number[]) =>
   api.post<MovieNightResponse>('/movie-night/matches', { present_member_ids: presentMemberIds }).then(r => r.data);
 
 // History (now derived from MemberWatched)
-export const getWatchHistory = (year?: number, limit = 50) =>
-  api.get<MemberWatched[]>('/watched/history/all', { params: { year, limit } }).then(r => r.data);
-export const getWatchStats = () => api.get<WatchStats>('/watched/history/stats').then(r => r.data);
+export const getWatchHistory = (memberId: number, limit = 50) =>
+  api.get<MemberWatched[]>(`/watched/${memberId}`, { params: { limit } }).then(r => r.data);
+export const getWatchStats = (memberId?: number) =>
+  api.get<WatchStats>('/watched/history/stats', { params: memberId ? { member_id: memberId } : {} }).then(r => r.data);
 
 // Member Watched
 export const getMemberWatched = (memberId: number) =>
