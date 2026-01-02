@@ -82,6 +82,38 @@ class TMDBService:
             response.raise_for_status()
             return response.json()
 
+    async def discover_movies(
+        self,
+        sort_by: str = "popularity.desc",
+        release_date_gte: str = None,
+        release_date_lte: str = None,
+        vote_count_gte: int = None,
+        with_release_type: str = "4|5",
+        page: int = 1
+    ) -> dict:
+        """Discover movies with flexible filters for home availability"""
+        params = {
+            "page": page,
+            "sort_by": sort_by,
+            "with_release_type": with_release_type,
+            "include_adult": False,
+        }
+        if release_date_gte:
+            params["primary_release_date.gte"] = release_date_gte
+        if release_date_lte:
+            params["primary_release_date.lte"] = release_date_lte
+        if vote_count_gte:
+            params["vote_count.gte"] = vote_count_gte
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{TMDB_BASE_URL}/discover/movie",
+                params=params,
+                headers=self.headers
+            )
+            response.raise_for_status()
+            return response.json()
+
     @staticmethod
     def get_poster_url(poster_path: str, size: str = "w500") -> Optional[str]:
         """Get full URL for poster image"""
