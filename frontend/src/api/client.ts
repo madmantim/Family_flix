@@ -9,6 +9,7 @@ import type {
   WatchStats,
   SwipeDirection,
   MemberWatched,
+  Swipe,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -49,6 +50,8 @@ export const getSwipeQueue = (memberId: number, limit = 20) =>
   api.get<SwipeQueue>(`/swipes/queue/${memberId}`, { params: { limit } }).then(r => r.data);
 export const recordSwipe = (memberId: number, movieId: number, direction: SwipeDirection, watched = false) =>
   api.post('/swipes', { member_id: memberId, movie_id: movieId, direction, watched }).then(r => r.data);
+export const getMemberSwipes = (memberId: number) =>
+  api.get<Swipe[]>(`/swipes/member/${memberId}`).then(r => r.data);
 
 // Watchlist
 export const getWatchlist = (activeOnly = true) =>

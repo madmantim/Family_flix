@@ -22,22 +22,24 @@ def create_swipe(swipe: SwipeCreate, db: Session = Depends(get_db)):
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
 
-    # Check if already swiped
+    # Check if already swiped - update if exists, create if not
     existing = db.query(Swipe).filter(
         Swipe.member_id == swipe.member_id,
         Swipe.movie_id == swipe.movie_id
     ).first()
 
     if existing:
-        raise HTTPException(status_code=400, detail="Already swiped on this movie")
-
-    # Create swipe
-    db_swipe = Swipe(
-        member_id=swipe.member_id,
-        movie_id=swipe.movie_id,
-        direction=swipe.direction
-    )
-    db.add(db_swipe)
+        # Update existing swipe
+        existing.direction = swipe.direction
+        db_swipe = existing
+    else:
+        # Create new swipe
+        db_swipe = Swipe(
+            member_id=swipe.member_id,
+            movie_id=swipe.movie_id,
+            direction=swipe.direction
+        )
+        db.add(db_swipe)
 
     # If watched flag is set, create/update MemberWatched record
     if swipe.watched:

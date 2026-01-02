@@ -6,6 +6,7 @@ import './MovieDetailCard.css';
 interface MovieDetailCardProps {
   entry: WatchlistEntry;
   watched: boolean;
+  currentSwipe?: SwipeDirection;
   isPending: boolean;
   onClose: () => void;
   onSwipe: (direction: SwipeDirection) => void;
@@ -16,6 +17,7 @@ interface MovieDetailCardProps {
 export function MovieDetailCard({
   entry,
   watched,
+  currentSwipe,
   isPending,
   onClose,
   onSwipe,
@@ -115,7 +117,7 @@ export function MovieDetailCard({
 
         <div className="action-row">
           <motion.button
-            className="action-btn no"
+            className={`action-btn no ${currentSwipe === 'no' ? 'active' : ''}`}
             onClick={() => onSwipe('no')}
             disabled={isPending}
             whileHover={{ scale: 1.1 }}
@@ -133,7 +135,7 @@ export function MovieDetailCard({
             🗑
           </motion.button>
           <motion.button
-            className="action-btn yes"
+            className={`action-btn yes ${currentSwipe === 'yes' ? 'active' : ''}`}
             onClick={() => onSwipe('yes')}
             disabled={isPending}
             whileHover={{ scale: 1.1 }}

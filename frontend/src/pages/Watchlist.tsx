@@ -11,6 +11,7 @@ import {
   updateWouldRewatch,
   recordSwipe,
   markMovieWatched,
+  getMemberSwipes,
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { MovieDetailCard } from '../components/MovieDetailCard';
@@ -38,6 +39,12 @@ export function Watchlist() {
     queryKey: ['memberWatched', memberId],
     queryFn: () => getMemberWatched(memberId!),
     enabled: !!memberId && showWatched,
+  });
+
+  const { data: memberSwipes } = useQuery({
+    queryKey: ['memberSwipes', memberId],
+    queryFn: () => getMemberSwipes(memberId!),
+    enabled: !!memberId,
   });
 
   const updateRewatchMutation = useMutation({
@@ -71,6 +78,7 @@ export function Watchlist() {
       recordSwipe(memberId!, movieId, direction, false),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['swipeQueue'] });
+      queryClient.invalidateQueries({ queryKey: ['memberSwipes', memberId] });
       setSelectedEntry(null);
     },
   });
@@ -275,6 +283,7 @@ export function Watchlist() {
           <MovieDetailCard
             entry={selectedEntry}
             watched={detailWatched}
+            currentSwipe={memberSwipes?.find(s => s.movie_id === selectedEntry.movie.id)?.direction}
             isPending={swipeMutation.isPending || removeMutation.isPending || watchedMutation.isPending}
             onClose={() => setSelectedEntry(null)}
             onSwipe={(direction) => swipeMutation.mutate({ movieId: selectedEntry.movie.id, direction })}
