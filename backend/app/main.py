@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 from .database import engine, Base
-from .routers import members, movies, swipes, watchlist, movie_night, history, watched
+from .routers import members, movies, swipes, watchlist, movie_night, watched
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -21,13 +23,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Serve static files (avatars, etc.)
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+os.makedirs(os.path.join(static_dir, "avatars"), exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 # Include routers
 app.include_router(members.router, prefix="/api/members", tags=["members"])
 app.include_router(movies.router, prefix="/api/movies", tags=["movies"])
 app.include_router(swipes.router, prefix="/api/swipes", tags=["swipes"])
 app.include_router(watchlist.router, prefix="/api/watchlist", tags=["watchlist"])
 app.include_router(movie_night.router, prefix="/api/movie-night", tags=["movie-night"])
-app.include_router(history.router, prefix="/api/history", tags=["history"])
 app.include_router(watched.router, prefix="/api/watched", tags=["watched"])
 
 
