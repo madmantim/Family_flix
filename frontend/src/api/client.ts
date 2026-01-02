@@ -43,6 +43,8 @@ export const searchMovies = (query: string, page = 1) =>
   api.get<TMDBSearchResponse>('/movies/search', { params: { query, page } }).then(r => r.data);
 export const getTrending = (page = 1) =>
   api.get<TMDBSearchResponse>('/movies/trending', { params: { page } }).then(r => r.data);
+export const discoverMovies = (tab: 'popular' | 'highly-rated', page = 1) =>
+  api.get<TMDBSearchResponse>('/movies/discover', { params: { tab, page } }).then(r => r.data);
 export const getMovie = (id: number) => api.get<Movie>(`/movies/${id}`).then(r => r.data);
 
 // Swipes
