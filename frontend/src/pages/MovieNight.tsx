@@ -2,19 +2,17 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { PanInfo } from 'framer-motion';
 import {
   getMembers,
   getMatches,
-  startRunoff,
-  castVote,
-  getRunoffResult,
   markMovieWatched,
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
-import type { MatchedMovie, RunoffResult } from '../types';
+import type { MatchedMovie, Movie } from '../types';
 import './MovieNight.css';
 
-type Stage = 'select' | 'matches' | 'voting' | 'winner' | 'completion';
+type Stage = 'select' | 'browse' | 'winner' | 'completion';
 
 export function MovieNight() {
   const navigate = useNavigate();
@@ -22,9 +20,8 @@ export function MovieNight() {
   const [stage, setStage] = useState<Stage>('select');
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
   const [matches, setMatches] = useState<MatchedMovie[]>([]);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [votedMovie, setVotedMovie] = useState<number | null>(null);
-  const [result, setResult] = useState<RunoffResult | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [result, setResult] = useState<Movie | null>(null);
   const [selectedWatchers, setSelectedWatchers] = useState<number[]>([]);
 
   const { data: members } = useQuery({
@@ -36,45 +33,23 @@ export function MovieNight() {
     mutationFn: () => getMatches(selectedMembers),
     onSuccess: (data) => {
       setMatches(data.matches);
-      if (data.matches.length === 1) {
+      if (data.matches.length === 0) {
+        // No matches - stay at select with empty state shown
+        setStage('browse');
+      } else if (data.matches.length === 1) {
         // Only one match - instant winner!
-        setResult({
-          winner: data.matches[0].movie,
-          votes: { [data.matches[0].movie.id]: selectedMembers.length },
-          was_tie: false,
-        });
+        setResult(data.matches[0].movie);
         setStage('winner');
-      } else if (data.matches.length > 1) {
-        setStage('matches');
+      } else {
+        // Multiple matches - go to browse stage
+        setCurrentIndex(0);
+        setStage('browse');
       }
     },
   });
 
-  const startVotingMutation = useMutation({
-    mutationFn: () => startRunoff(selectedMembers),
-    onSuccess: (data) => {
-      setSessionId(data.session_id);
-      setStage('voting');
-    },
-  });
-
-  const voteMutation = useMutation({
-    mutationFn: (movieId: number) => castVote(sessionId!, memberId!, movieId),
-    onSuccess: (_, movieId) => {
-      setVotedMovie(movieId);
-    },
-  });
-
-  const resultMutation = useMutation({
-    mutationFn: () => getRunoffResult(sessionId!),
-    onSuccess: (data) => {
-      setResult(data);
-      setStage('winner');
-    },
-  });
-
   const watchedMutation = useMutation({
-    mutationFn: () => markMovieWatched(result!.winner.id, selectedWatchers, false),
+    mutationFn: () => markMovieWatched(result!.id, selectedWatchers, false),
     onSuccess: () => {
       // Reset and go back
       setStage('select');
@@ -82,8 +57,7 @@ export function MovieNight() {
       setSelectedWatchers([]);
       setMatches([]);
       setResult(null);
-      setVotedMovie(null);
-      setSessionId(null);
+      setCurrentIndex(0);
     },
   });
 
@@ -101,6 +75,24 @@ export function MovieNight() {
 
   const getInitials = (name: string) =>
     name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+
+  const handleDragEnd = (_: never, info: PanInfo) => {
+    const threshold = 100;
+    if (info.offset.x < -threshold && currentIndex < matches.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    } else if (info.offset.x > threshold && currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+    }
+  };
+
+  const handleWatchThis = (movie: Movie) => {
+    setResult(movie);
+    setStage('winner');
+  };
+
+  const openTrailer = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   if (!memberId) {
     navigate('/');
@@ -148,110 +140,128 @@ export function MovieNight() {
           </motion.div>
         )}
 
-        {stage === 'matches' && (
+        {stage === 'browse' && (
           <motion.div
-            key="matches"
-            className="stage"
+            key="browse"
+            className="stage browse-stage"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
           >
-            <h1>Your Matches</h1>
-            <p>{matches.length} movies everyone agreed on</p>
-
-            <div className="matches-list">
-              {matches.map((match, i) => (
-                <motion.div
-                  key={match.movie.id}
-                  className="match-card"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <div
-                    className="poster"
-                    style={{
-                      backgroundImage: match.movie.poster_url
-                        ? `url(${match.movie.poster_url})`
-                        : undefined,
-                    }}
-                  />
-                  <div className="info">
-                    <h3>{match.movie.title}</h3>
-                    <span className="year">{match.movie.year}</span>
-                    {match.is_full_match ? (
-                      <span className="badge full">Full Match!</span>
-                    ) : (
-                      <span className="badge partial">
-                        {match.yes_votes}/{match.total_present} votes
-                      </span>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.button
-              className="start-btn"
-              onClick={() => startVotingMutation.mutate()}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Start Runoff Vote
-            </motion.button>
-          </motion.div>
-        )}
-
-        {stage === 'voting' && (
-          <motion.div
-            key="voting"
-            className="stage"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
-            <h1>Cast Your Vote</h1>
-            <p>Pick your favorite for tonight</p>
-
-            <div className="voting-grid">
-              {matches.map((match) => (
+            {matches.length === 0 ? (
+              <div className="empty-matches">
+                <h1>No Matches Found</h1>
+                <p>No movies match for everyone watching tonight.</p>
+                <p className="suggestion">Try adding more movies to the watchlist or changing who's watching.</p>
                 <motion.button
-                  key={match.movie.id}
-                  className={`vote-card ${votedMovie === match.movie.id ? 'voted' : ''}`}
-                  onClick={() => voteMutation.mutate(match.movie.id)}
-                  whileTap={{ scale: 0.95 }}
-                  disabled={!!votedMovie}
+                  className="start-btn"
+                  onClick={() => setStage('select')}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <div
-                    className="poster"
-                    style={{
-                      backgroundImage: match.movie.poster_url
-                        ? `url(${match.movie.poster_url})`
-                        : undefined,
-                    }}
-                  >
-                    {votedMovie === match.movie.id && (
-                      <div className="voted-overlay">
-                        <span>✓</span>
-                      </div>
-                    )}
-                  </div>
-                  <span className="title">{match.movie.title}</span>
+                  Go Back
                 </motion.button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <>
+                <div className="browse-header">
+                  <h1>Pick a Movie</h1>
+                  <div className="position-indicator">
+                    {currentIndex + 1} of {matches.length}
+                  </div>
+                </div>
 
-            {votedMovie && (
-              <motion.button
-                className="start-btn"
-                onClick={() => resultMutation.mutate()}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {resultMutation.isPending ? 'Counting...' : 'See Results'}
-              </motion.button>
+                <div className="position-dots">
+                  {matches.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`dot ${i === currentIndex ? 'active' : ''}`}
+                      onClick={() => setCurrentIndex(i)}
+                    />
+                  ))}
+                </div>
+
+                <div className="browse-card-container">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentIndex}
+                      className="browse-card"
+                      initial={{ opacity: 0, x: 50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -50 }}
+                      drag="x"
+                      dragConstraints={{ left: 0, right: 0 }}
+                      dragElastic={0.2}
+                      onDragEnd={handleDragEnd}
+                    >
+                      {matches[currentIndex] && (
+                        <>
+                          <div
+                            className="browse-poster"
+                            style={{
+                              backgroundImage: matches[currentIndex].movie.poster_url
+                                ? `url(${matches[currentIndex].movie.poster_url})`
+                                : undefined,
+                            }}
+                          />
+
+                          <div className="browse-info">
+                            <h2>
+                              {matches[currentIndex].movie.title}
+                              {matches[currentIndex].movie.year && (
+                                <span className="year"> ({matches[currentIndex].movie.year})</span>
+                              )}
+                            </h2>
+
+                            {(matches[currentIndex].movie.rt_critic_score || matches[currentIndex].movie.rt_audience_score) && (
+                              <div className="rt-scores">
+                                {matches[currentIndex].movie.rt_critic_score && (
+                                  <span className="rt-score critic">
+                                    🍅 {matches[currentIndex].movie.rt_critic_score}%
+                                  </span>
+                                )}
+                                {matches[currentIndex].movie.rt_audience_score && (
+                                  <span className="rt-score audience">
+                                    🍿 {matches[currentIndex].movie.rt_audience_score}%
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {matches[currentIndex].movie.overview && (
+                              <p className="synopsis">{matches[currentIndex].movie.overview}</p>
+                            )}
+                          </div>
+
+                          <div className="browse-actions">
+                            {matches[currentIndex].movie.trailer_url && (
+                              <motion.button
+                                className="trailer-btn"
+                                onClick={() => openTrailer(matches[currentIndex].movie.trailer_url!)}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                ▶ Watch Trailer
+                              </motion.button>
+                            )}
+
+                            <motion.button
+                              className="watch-this-btn"
+                              onClick={() => handleWatchThis(matches[currentIndex].movie)}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              Watch This
+                            </motion.button>
+                          </div>
+                        </>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                <p className="swipe-hint">← swipe to browse →</p>
+              </>
             )}
           </motion.div>
         )}
@@ -289,14 +299,13 @@ export function MovieNight() {
               <div
                 className="poster"
                 style={{
-                  backgroundImage: result.winner.poster_url
-                    ? `url(${result.winner.poster_url})`
+                  backgroundImage: result.poster_url
+                    ? `url(${result.poster_url})`
                     : undefined,
                 }}
               />
-              <h2>{result.winner.title}</h2>
-              <p className="year">{result.winner.year}</p>
-              {result.was_tie && <p className="tie-note">Won by random tiebreaker!</p>}
+              <h2>{result.title}</h2>
+              <p className="year">{result.year}</p>
             </motion.div>
 
             <div className="winner-actions">
@@ -318,6 +327,7 @@ export function MovieNight() {
                   setSelectedMembers([]);
                   setMatches([]);
                   setResult(null);
+                  setCurrentIndex(0);
                 }}
               >
                 Done
@@ -340,12 +350,12 @@ export function MovieNight() {
               <div
                 className="poster"
                 style={{
-                  backgroundImage: result.winner.poster_url
-                    ? `url(${result.winner.poster_url})`
+                  backgroundImage: result.poster_url
+                    ? `url(${result.poster_url})`
                     : undefined,
                 }}
               />
-              <h3>{result.winner.title}</h3>
+              <h3>{result.title}</h3>
             </div>
 
             <div className="watcher-checkboxes">
@@ -379,6 +389,7 @@ export function MovieNight() {
                   setSelectedWatchers([]);
                   setMatches([]);
                   setResult(null);
+                  setCurrentIndex(0);
                 }}
               >
                 Skip

@@ -59,7 +59,6 @@ class Movie(Base):
 
     swipes = relationship("Swipe", back_populates="movie")
     watchlist_entries = relationship("WatchlistEntry", back_populates="movie")
-    watch_history = relationship("WatchHistory", back_populates="movie")
     member_watched = relationship("MemberWatched", back_populates="movie")
 
 
@@ -96,18 +95,6 @@ class Swipe(Base):
         __table_args__ = (
             {"sqlite_autoincrement": True},
         )
-
-
-class WatchHistory(Base):
-    """Movies that have been watched"""
-    __tablename__ = "watch_history"
-
-    id = Column(Integer, primary_key=True, index=True)
-    movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False)
-    watched_at = Column(DateTime, default=datetime.utcnow)
-    watchers = Column(String(500), nullable=True)  # JSON array of member IDs
-
-    movie = relationship("Movie", back_populates="watch_history")
 
 
 class MemberWatched(Base):

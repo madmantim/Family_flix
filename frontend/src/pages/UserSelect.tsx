@@ -48,6 +48,10 @@ export function UserSelect() {
   });
 
   const handleSelect = (member: Member) => {
+    if (didLongPress.current) {
+      didLongPress.current = false;
+      return; // Don't navigate if we just did a long-press
+    }
     selectMember(member);
     navigate('/swipe');
   };
@@ -59,9 +63,15 @@ export function UserSelect() {
     }
   };
 
-  const handleTouchStart = (memberId: number) => {
+  const didLongPress = useRef(false);
+
+  const handleTouchStart = (memberId: number, e: React.TouchEvent | React.MouseEvent) => {
+    didLongPress.current = false;
     longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
       selectedMemberRef.current = memberId;
+      // Prevent text selection context menu
+      e.preventDefault();
       fileInputRef.current?.click();
     }, 500);
   };
@@ -111,11 +121,12 @@ export function UserSelect() {
             key={member.id}
             className="member-card"
             onClick={() => handleSelect(member)}
-            onTouchStart={() => handleTouchStart(member.id)}
+            onTouchStart={(e) => handleTouchStart(member.id, e)}
             onTouchEnd={handleTouchEnd}
-            onMouseDown={() => handleTouchStart(member.id)}
+            onMouseDown={(e) => handleTouchStart(member.id, e)}
             onMouseUp={handleTouchEnd}
             onMouseLeave={handleTouchEnd}
+            onContextMenu={(e) => e.preventDefault()}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1 }}

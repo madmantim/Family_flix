@@ -113,32 +113,6 @@ class MovieNightResponse(BaseModel):
     present_members: List[MemberResponse]
 
 
-class VoteRequest(BaseModel):
-    member_id: int
-    movie_id: int
-
-
-class RunoffResult(BaseModel):
-    winner: MovieResponse
-    votes: dict  # movie_id -> count
-    was_tie: bool
-
-
-# Watch History schemas
-class WatchHistoryCreate(BaseModel):
-    movie_id: int
-    watcher_ids: List[int]
-
-
-class WatchHistoryResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    movie: MovieResponse
-    watched_at: datetime
-    watchers: Optional[str] = None
-
-
 # Swipe queue
 class SwipeQueueResponse(BaseModel):
     movies: List[MovieResponse]

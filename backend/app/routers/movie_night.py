@@ -1,18 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Dict
-from collections import defaultdict
-import random
+from typing import List
 from ..database import get_db
 from ..models import Movie, Member, Swipe, WatchlistEntry, SwipeDirection, ContentRating, MemberWatched
-from ..schemas import MovieNightRequest, MovieNightResponse, MatchedMovie, VoteRequest, RunoffResult
+from ..schemas import MovieNightRequest, MovieNightResponse, MatchedMovie
 from ..services.tmdb import TMDBService
 
 router = APIRouter()
-
-# In-memory storage for active movie night voting
-# In production, this could be Redis or DB-stored
-active_votes: Dict[str, Dict[int, int]] = {}  # session_id -> {member_id: movie_id}
 
 
 @router.post("/matches", response_model=MovieNightResponse)
@@ -65,6 +59,8 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
 
         # Check eligibility: member is eligible if not watched OR would_rewatch=True
         eligible_count = 0
+        any_blocked = False  # True if any member watched and wouldn't rewatch
+
         for mid in member_ids:
             watched = db.query(MemberWatched).filter(
                 MemberWatched.member_id == mid,
@@ -72,20 +68,24 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
             ).first()
 
             if watched is None:
-                # Not watched = eligible (if they swiped yes)
+                # Not watched = eligible (count if they swiped yes)
                 if mid in yes_member_ids:
                     eligible_count += 1
             elif watched.would_rewatch:
-                # Watched but would rewatch = eligible (if they swiped yes)
+                # Watched but would rewatch = eligible (count if they swiped yes)
                 if mid in yes_member_ids:
                     eligible_count += 1
-            # else: watched and would not rewatch = not eligible
+            else:
+                # Watched and would not rewatch = blocked
+                any_blocked = True
+                break
+
+        # Skip movies where any present member has watched and wouldn't rewatch
+        if any_blocked:
+            continue
 
         # Only include if all present members are eligible and swiped yes
         all_eligible = eligible_count == len(member_ids)
-
-        if eligible_count == 0:
-            continue  # Skip movies with no eligible members
 
         # Get watchlist entry for source info
         entry = db.query(WatchlistEntry).filter(
@@ -102,17 +102,17 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
             "added_at": entry.added_at if entry else None
         })
 
-    # Sort: full matches first, then by yes_votes desc, then by source priority, then recency
+    # Sort: full matches first, then by yes_votes desc, then by source priority, then recency (newest first)
     source_priority = {"manual": 0, "curated": 1, "trending": 2}
     matches.sort(key=lambda m: (
         -int(m["is_full_match"]),  # Full matches first
         -m["yes_votes"],  # Most votes
         source_priority.get(m["source"], 3),  # Source priority
-        m["added_at"] or ""  # Newer first (desc by negating would need datetime, just use natural for now)
+        -(m["added_at"].timestamp() if m["added_at"] else 0)  # Newest first
     ))
 
-    # Return top 5 matches
-    top_matches = matches[:5]
+    # Return all matches (no limit)
+    top_matches = matches
 
     result = []
     for m in top_matches:
@@ -147,91 +147,4 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
     return MovieNightResponse(
         matches=result,
         present_members=members
-    )
-
-
-@router.post("/start-runoff")
-def start_runoff(request: MovieNightRequest):
-    """Start a new runoff voting session"""
-    import uuid
-    session_id = str(uuid.uuid4())
-    active_votes[session_id] = {}
-    return {"session_id": session_id, "present_member_ids": request.present_member_ids}
-
-
-@router.post("/vote/{session_id}")
-def cast_vote(session_id: str, vote: VoteRequest, db: Session = Depends(get_db)):
-    """Cast a vote in the runoff"""
-    if session_id not in active_votes:
-        raise HTTPException(status_code=404, detail="Voting session not found")
-
-    # Validate member
-    member = db.query(Member).filter(Member.id == vote.member_id).first()
-    if not member:
-        raise HTTPException(status_code=404, detail="Member not found")
-
-    # Validate movie
-    movie = db.query(Movie).filter(Movie.id == vote.movie_id).first()
-    if not movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
-
-    active_votes[session_id][vote.member_id] = vote.movie_id
-
-    return {"status": "vote_recorded", "member_id": vote.member_id, "movie_id": vote.movie_id}
-
-
-@router.post("/result/{session_id}", response_model=RunoffResult)
-def get_runoff_result(session_id: str, db: Session = Depends(get_db)):
-    """Calculate and return the runoff winner"""
-    if session_id not in active_votes:
-        raise HTTPException(status_code=404, detail="Voting session not found")
-
-    votes = active_votes[session_id]
-
-    if not votes:
-        raise HTTPException(status_code=400, detail="No votes cast yet")
-
-    # Count votes per movie
-    vote_counts = defaultdict(int)
-    for member_id, movie_id in votes.items():
-        vote_counts[movie_id] += 1
-
-    # Find max votes
-    max_votes = max(vote_counts.values())
-    winners = [movie_id for movie_id, count in vote_counts.items() if count == max_votes]
-
-    # Random tiebreaker
-    was_tie = len(winners) > 1
-    winning_movie_id = random.choice(winners)
-
-    # Get winner movie
-    movie = db.query(Movie).filter(Movie.id == winning_movie_id).first()
-
-    # Clean up session
-    del active_votes[session_id]
-
-    return RunoffResult(
-        winner={
-            "id": movie.id,
-            "tmdb_id": movie.tmdb_id,
-            "title": movie.title,
-            "year": movie.year,
-            "overview": movie.overview,
-            "poster_path": movie.poster_path,
-            "backdrop_path": movie.backdrop_path,
-            "vote_average": movie.vote_average,
-            "content_rating": movie.content_rating,
-            "runtime": movie.runtime,
-            "genres": movie.genres,
-            "imdb_id": movie.imdb_id,
-            "rt_critic_score": movie.rt_critic_score,
-            "rt_audience_score": movie.rt_audience_score,
-            "rt_url": movie.rt_url,
-            "trailer_url": movie.trailer_url,
-            "created_at": movie.created_at,
-            "poster_url": TMDBService.get_poster_url(movie.poster_path),
-            "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
-        },
-        votes=dict(vote_counts),
-        was_tie=was_tie
     )

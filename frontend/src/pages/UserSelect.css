@@ -71,6 +71,10 @@
   font-weight: 700;
   color: white;
   overflow: hidden;
+  /* Prevent text selection on long-press */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .member-card .avatar img {

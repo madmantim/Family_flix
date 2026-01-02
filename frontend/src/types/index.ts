@@ -48,13 +48,6 @@ export interface WatchlistEntry {
   is_active: boolean;
 }
 
-export interface WatchHistory {
-  id: number;
-  movie: Movie;
-  watched_at: string;
-  watchers: string | null;
-}
-
 export interface MemberWatched {
   id: number;
   movie: Movie;
@@ -72,12 +65,6 @@ export interface MatchedMovie {
 export interface MovieNightResponse {
   matches: MatchedMovie[];
   present_members: Member[];
-}
-
-export interface RunoffResult {
-  winner: Movie;
-  votes: Record<number, number>;
-  was_tie: boolean;
 }
 
 export interface SwipeQueue {

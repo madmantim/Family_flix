@@ -579,14 +579,20 @@ class TestHistoryReturnsRatingsAndTrailers:
         db.add(movie)
         db.commit()
 
-        # Mark as watched
-        resp = client.post("/api/history/", json={
+        # Mark as watched using new /watched/ endpoint
+        resp = client.post("/api/watched/", json={
             "movie_id": movie.id,
-            "watcher_ids": [member.id]
+            "member_ids": [member.id],
+            "would_rewatch": False
         })
-        assert resp.status_code == 201
+        assert resp.status_code == 200
 
-        movie_data = resp.json()["movie"]
+        # Get history via new endpoint
+        history_resp = client.get("/api/watched/history/all")
+        assert history_resp.status_code == 200
+        assert len(history_resp.json()) == 1
+
+        movie_data = history_resp.json()[0]["movie"]
         assert movie_data["imdb_id"] == "tt3333333"
         assert movie_data["rt_critic_score"] == 75
         assert movie_data["rt_audience_score"] == 80
