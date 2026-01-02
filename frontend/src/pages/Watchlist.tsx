@@ -13,6 +13,7 @@ import {
   toggleWatched,
   removeWatched,
   getMemberSwipes,
+  discoverMovies,
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { MovieDetailCard } from '../components/MovieDetailCard';
@@ -37,6 +38,8 @@ export function Watchlist() {
   const [isSearching, setIsSearching] = useState(false);
   const [showWatched, setShowWatched] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<WatchlistEntry | null>(null);
+  const [showDiscover, setShowDiscover] = useState(false);
+  const [discoverTab, setDiscoverTab] = useState<'popular' | 'highly-rated'>('popular');
 
   const { data: watchlist, isLoading } = useQuery({
     queryKey: ['watchlist'],
@@ -53,6 +56,12 @@ export function Watchlist() {
     queryKey: ['memberSwipes', memberId],
     queryFn: () => getMemberSwipes(memberId!),
     enabled: !!memberId,
+  });
+
+  const { data: discoverResults, isLoading: isDiscoverLoading } = useQuery({
+    queryKey: ['discover', discoverTab],
+    queryFn: () => discoverMovies(discoverTab),
+    enabled: showDiscover,
   });
 
   const updateRewatchMutation = useMutation({
@@ -139,9 +148,14 @@ export function Watchlist() {
             />
           </label>
           {!showWatched && (
-            <button className="add-btn" onClick={() => setShowSearch(true)}>
-              + Add
-            </button>
+            <>
+              <button className="discover-btn" onClick={() => setShowDiscover(true)}>
+                Discover
+              </button>
+              <button className="add-btn" onClick={() => setShowSearch(true)}>
+                + Add
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -284,6 +298,85 @@ export function Watchlist() {
               <button className="close-btn" onClick={() => setShowSearch(false)}>
                 Close
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDiscover && (
+          <motion.div
+            className="discover-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowDiscover(false)}
+          >
+            <motion.div
+              className="discover-content"
+              initial={{ y: 100 }}
+              animate={{ y: 0 }}
+              exit={{ y: 100 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="discover-header">
+                <h2>Discover</h2>
+                <button className="close-btn" onClick={() => setShowDiscover(false)}>
+                  ✕
+                </button>
+              </div>
+
+              <div className="discover-tabs">
+                <button
+                  className={`tab ${discoverTab === 'popular' ? 'active' : ''}`}
+                  onClick={() => setDiscoverTab('popular')}
+                >
+                  Popular
+                </button>
+                <button
+                  className={`tab ${discoverTab === 'highly-rated' ? 'active' : ''}`}
+                  onClick={() => setDiscoverTab('highly-rated')}
+                >
+                  Highly Rated
+                </button>
+              </div>
+
+              <div className="discover-results">
+                {isDiscoverLoading ? (
+                  <div className="loading">Loading...</div>
+                ) : (
+                  <div className="discover-grid">
+                    {discoverResults?.results
+                      .filter(movie => !watchlist?.some(w => w.movie.tmdb_id === movie.tmdb_id))
+                      .map((movie) => (
+                        <motion.div
+                          key={movie.tmdb_id}
+                          className="discover-item"
+                          initial={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          layout
+                          onClick={() => addMutation.mutate(movie.tmdb_id)}
+                        >
+                          <div
+                            className="poster"
+                            style={{
+                              backgroundImage: movie.poster_url
+                                ? `url(${movie.poster_url})`
+                                : undefined,
+                            }}
+                          >
+                            {!movie.poster_url && <span>No Poster</span>}
+                            <div className="add-overlay">+</div>
+                          </div>
+                          <div className="title">{movie.title}</div>
+                          {movie.vote_average && (
+                            <div className="rating">★ {movie.vote_average.toFixed(1)}</div>
+                          )}
+                        </motion.div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}
