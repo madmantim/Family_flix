@@ -1,0 +1,98 @@
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.5rem 0.25rem;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 0.5rem);
+  background: rgba(0, 0, 0, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 100;
+}
+
+.bottom-nav button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav button:active {
+  transform: scale(0.92);
+}
+
+.bottom-nav button span {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.bottom-nav button.active span {
+  color: var(--color-brand);
+}
+
+.nav-icon {
+  width: 26px;
+  height: 26px;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.nav-icon.active {
+  color: var(--color-brand);
+}
+
+/* User nav item */
+.user-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.user-nav-item:active {
+  transform: scale(0.92);
+}
+
+.user-nav-item span {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #666;
+}
+
+.user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: white;
+  overflow: hidden;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
