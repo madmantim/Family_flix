@@ -4,8 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence, type PanInfo } from 'framer-motion';
 import { getSwipeQueue, recordSwipe, getMember } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
+import { HelpTooltip } from '../components/HelpTooltip';
 import type { Movie, SwipeDirection } from '../types';
 import './SwipeScreen.css';
+
+const SWIPE_HELP_ITEMS = [
+  { icon: '✕', label: 'Pass' },
+  { icon: '♥', label: 'Watch / Rewatch' },
+  { icon: '👁', label: 'Seen it' },
+];
 
 // Fetch a larger batch to reduce API calls
 const BATCH_SIZE = 100;
@@ -231,6 +238,7 @@ export function SwipeScreen() {
           Switch User
         </button>
         <span className="member-name">{member?.name}</span>
+        <HelpTooltip items={SWIPE_HELP_ITEMS} />
         <span className="count">{trueRemaining} left</span>
       </header>
 
