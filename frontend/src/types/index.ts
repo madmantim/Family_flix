@@ -60,6 +60,7 @@ export interface MatchedMovie {
   yes_votes: number;
   total_present: number;
   is_full_match: boolean;
+  voters: Member[];
 }
 
 export interface MovieNightResponse {

@@ -9,8 +9,11 @@ import {
   markMovieWatched,
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
+import { BottomNav } from '../components/BottomNav';
 import type { MatchedMovie, Movie } from '../types';
 import './MovieNight.css';
+
+const AVATAR_COLORS = ['#E53935', '#8E24AA', '#1E88E5', '#43A047', '#FB8C00', '#00ACC1', '#5E35B1'];
 
 type Stage = 'select' | 'browse' | 'winner' | 'completion';
 
@@ -76,6 +79,14 @@ export function MovieNight() {
   const getInitials = (name: string) =>
     name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
+  const getColor = (index: number) => AVATAR_COLORS[index % AVATAR_COLORS.length];
+
+  const getAvatarUrl = (avatarPath: string | null) => {
+    if (!avatarPath) return null;
+    const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
+    return `${baseUrl}${avatarPath}`;
+  };
+
   const handleDragEnd = (_: never, info: PanInfo) => {
     const threshold = 100;
     if (info.offset.x < -threshold && currentIndex < matches.length - 1) {
@@ -114,14 +125,20 @@ export function MovieNight() {
             <p>Who's watching tonight?</p>
 
             <div className="member-select">
-              {members?.map((member) => (
+              {members?.map((member, index) => (
                 <motion.button
                   key={member.id}
                   className={`member-chip ${selectedMembers.includes(member.id) ? 'selected' : ''}`}
                   onClick={() => toggleMember(member.id)}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <span className="avatar">{getInitials(member.name)}</span>
+                  <span className="avatar" style={{ backgroundColor: getColor(index) }}>
+                    {member.avatar_url ? (
+                      <img src={getAvatarUrl(member.avatar_url)!} alt={member.name} />
+                    ) : (
+                      getInitials(member.name)
+                    )}
+                  </span>
                   <span className="name">{member.name}</span>
                   {selectedMembers.includes(member.id) && <span className="check">✓</span>}
                 </motion.button>
@@ -212,6 +229,37 @@ export function MovieNight() {
                                 <span className="year"> ({matches[currentIndex].movie.year})</span>
                               )}
                             </h2>
+
+                            <div className="voter-stack">
+                              <span className="voter-icon">
+                                {matches[currentIndex].is_full_match ? '✓' : '👍'}
+                              </span>
+                              <div className="voter-avatars">
+                                {matches[currentIndex].voters.map((voter, idx) => (
+                                  <span
+                                    key={voter.id}
+                                    className="voter-avatar"
+                                    style={{
+                                      backgroundColor: getColor(idx),
+                                      zIndex: matches[currentIndex].voters.length - idx
+                                    }}
+                                  >
+                                    {voter.avatar_url ? (
+                                      <img src={getAvatarUrl(voter.avatar_url)!} alt={voter.name} />
+                                    ) : (
+                                      getInitials(voter.name)
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                              {matches[currentIndex].is_full_match ? (
+                                <span className="voter-label everyone">Everyone!</span>
+                              ) : (
+                                <span className="voter-label">
+                                  ({matches[currentIndex].yes_votes}/{matches[currentIndex].total_present})
+                                </span>
+                              )}
+                            </div>
 
                             {(matches[currentIndex].movie.rt_critic_score || matches[currentIndex].movie.rt_audience_score) && (
                               <div className="rt-scores">
@@ -399,12 +447,7 @@ export function MovieNight() {
         )}
       </AnimatePresence>
 
-      <nav className="bottom-nav">
-        <button onClick={() => navigate('/swipe')}>Swipe</button>
-        <button className="active">Movie Night</button>
-        <button onClick={() => navigate('/watchlist')}>Watchlist</button>
-        <button onClick={() => navigate('/history')}>History</button>
-      </nav>
+      <BottomNav />
     </div>
   );
 }

@@ -47,6 +47,9 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
     # Calculate yes votes for each movie from present members
     matches = []
 
+    # Create a lookup dict for members by id
+    members_by_id = {m.id: m for m in members}
+
     for movie in filtered_movies:
         # Get yes swipes from present members
         yes_swipes = db.query(Swipe).filter(
@@ -56,6 +59,7 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
         ).all()
 
         yes_member_ids = {s.member_id for s in yes_swipes}
+        yes_voters = [members_by_id[mid] for mid in yes_member_ids if mid in members_by_id]
 
         # Check eligibility: member is eligible if not watched OR would_rewatch=True
         eligible_count = 0
@@ -99,7 +103,8 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
             "total_present": len(member_ids),
             "is_full_match": all_eligible,
             "source": entry.source if entry else "manual",
-            "added_at": entry.added_at if entry else None
+            "added_at": entry.added_at if entry else None,
+            "voters": yes_voters
         })
 
     # Sort: full matches first, then by yes_votes desc, then by source priority, then recency (newest first)
@@ -141,7 +146,14 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
             },
             yes_votes=m["yes_votes"],
             total_present=m["total_present"],
-            is_full_match=m["is_full_match"]
+            is_full_match=m["is_full_match"],
+            voters=[{
+                "id": v.id,
+                "name": v.name,
+                "avatar_url": v.avatar_url,
+                "content_filter": v.content_filter,
+                "created_at": v.created_at
+            } for v in m["voters"]]
         ))
 
     return MovieNightResponse(
