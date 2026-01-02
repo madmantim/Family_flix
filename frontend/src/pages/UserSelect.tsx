@@ -16,6 +16,7 @@ export function UserSelect() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedMemberRef = useRef<number | null>(null);
@@ -65,14 +66,11 @@ export function UserSelect() {
 
   const didLongPress = useRef(false);
 
-  const handleTouchStart = (memberId: number, e: React.TouchEvent | React.MouseEvent) => {
+  const handleTouchStart = (memberId: number) => {
     didLongPress.current = false;
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true;
-      selectedMemberRef.current = memberId;
-      // Prevent text selection context menu
-      e.preventDefault();
-      fileInputRef.current?.click();
+      setEditingId(memberId);
     }, 500);
   };
 
@@ -81,6 +79,13 @@ export function UserSelect() {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+  };
+
+  const handleEditClick = (memberId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    selectedMemberRef.current = memberId;
+    fileInputRef.current?.click();
+    setEditingId(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,9 +126,9 @@ export function UserSelect() {
             key={member.id}
             className="member-card"
             onClick={() => handleSelect(member)}
-            onTouchStart={(e) => handleTouchStart(member.id, e)}
+            onTouchStart={() => handleTouchStart(member.id)}
             onTouchEnd={handleTouchEnd}
-            onMouseDown={(e) => handleTouchStart(member.id, e)}
+            onMouseDown={() => handleTouchStart(member.id)}
             onMouseUp={handleTouchEnd}
             onMouseLeave={handleTouchEnd}
             onContextMenu={(e) => e.preventDefault()}
@@ -143,6 +148,11 @@ export function UserSelect() {
                 <img src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'}${member.avatar_url}`} alt={member.name} />
               ) : (
                 getInitials(member.name)
+              )}
+              {editingId === member.id && (
+                <div className="avatar-edit-overlay" onClick={(e) => handleEditClick(member.id, e)}>
+                  <span>Change Photo</span>
+                </div>
               )}
             </div>
             <span className="name">{member.name}</span>

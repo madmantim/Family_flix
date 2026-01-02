@@ -78,3 +78,6 @@ export const markMovieWatched = (movieId: number, memberIds: number[], wouldRewa
 
 export const updateWouldRewatch = (memberId: number, movieId: number, wouldRewatch: boolean) =>
   api.patch(`/watched/${memberId}/${movieId}`, { would_rewatch: wouldRewatch }).then(r => r.data);
+
+export const removeWatched = (memberId: number, movieId: number) =>
+  api.delete(`/watched/${memberId}/${movieId}`);

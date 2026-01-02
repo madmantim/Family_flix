@@ -11,6 +11,7 @@ import {
   updateWouldRewatch,
   recordSwipe,
   markMovieWatched,
+  removeWatched,
   getMemberSwipes,
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
@@ -28,17 +29,16 @@ export function Watchlist() {
   const [isSearching, setIsSearching] = useState(false);
   const [showWatched, setShowWatched] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<WatchlistEntry | null>(null);
-  const [detailWatched, setDetailWatched] = useState(false);
 
   const { data: watchlist, isLoading } = useQuery({
     queryKey: ['watchlist'],
     queryFn: () => getWatchlist(true),
   });
 
-  const { data: watchedMovies } = useQuery({
+  const { data: memberWatchedList } = useQuery({
     queryKey: ['memberWatched', memberId],
     queryFn: () => getMemberWatched(memberId!),
-    enabled: !!memberId && showWatched,
+    enabled: !!memberId,
   });
 
   const { data: memberSwipes } = useQuery({
@@ -87,7 +87,14 @@ export function Watchlist() {
     mutationFn: (movieId: number) => markMovieWatched(movieId, [memberId!], false),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['memberWatched', memberId] });
-      setDetailWatched(true);
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+    },
+  });
+
+  const unwatchMutation = useMutation({
+    mutationFn: (movieId: number) => removeWatched(memberId!, movieId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['memberWatched', memberId] });
     },
   });
 
@@ -134,12 +141,12 @@ export function Watchlist() {
 
       {showWatched ? (
         <div className="watched-list">
-          {watchedMovies?.length === 0 ? (
+          {memberWatchedList?.length === 0 ? (
             <div className="empty">
               <p>No watched movies yet</p>
             </div>
           ) : (
-            watchedMovies?.map((item) => (
+            memberWatchedList?.map((item) => (
               <div key={item.id} className="watched-item">
                 <div
                   className="poster"
@@ -190,10 +197,7 @@ export function Watchlist() {
                     ? `url(${entry.movie.poster_url})`
                     : undefined,
                 }}
-                onClick={() => {
-                  setSelectedEntry(entry);
-                  setDetailWatched(false);
-                }}
+                onClick={() => setSelectedEntry(entry)}
               >
                 {!entry.movie.poster_url && <span>No Poster</span>}
                 <button
@@ -279,25 +283,30 @@ export function Watchlist() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {selectedEntry && (
-          <MovieDetailCard
-            entry={selectedEntry}
-            watched={detailWatched}
-            currentSwipe={memberSwipes?.find(s => s.movie_id === selectedEntry.movie.id)?.direction}
-            isPending={swipeMutation.isPending || removeMutation.isPending || watchedMutation.isPending}
-            onClose={() => setSelectedEntry(null)}
-            onSwipe={(direction) => swipeMutation.mutate({ movieId: selectedEntry.movie.id, direction })}
-            onRemove={() => {
-              removeMutation.mutate(selectedEntry.id);
-              setSelectedEntry(null);
-            }}
-            onWatchedToggle={() => {
-              if (!detailWatched) {
-                watchedMutation.mutate(selectedEntry.movie.id);
-              }
-            }}
-          />
-        )}
+        {selectedEntry && (() => {
+          const isWatched = memberWatchedList?.some(w => w.movie.id === selectedEntry.movie.id) ?? false;
+          return (
+            <MovieDetailCard
+              entry={selectedEntry}
+              watched={isWatched}
+              currentSwipe={memberSwipes?.find(s => s.movie_id === selectedEntry.movie.id)?.direction}
+              isPending={swipeMutation.isPending || removeMutation.isPending || watchedMutation.isPending || unwatchMutation.isPending}
+              onClose={() => setSelectedEntry(null)}
+              onSwipe={(direction) => swipeMutation.mutate({ movieId: selectedEntry.movie.id, direction })}
+              onRemove={() => {
+                removeMutation.mutate(selectedEntry.id);
+                setSelectedEntry(null);
+              }}
+              onWatchedToggle={() => {
+                if (isWatched) {
+                  unwatchMutation.mutate(selectedEntry.movie.id);
+                } else {
+                  watchedMutation.mutate(selectedEntry.movie.id);
+                }
+              }}
+            />
+          );
+        })()}
       </AnimatePresence>
 
       <nav className="bottom-nav">
