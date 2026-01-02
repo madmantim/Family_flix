@@ -168,3 +168,13 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.avatar-loading {
+  font-size: 1.5rem;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getMembers, createMember } from '../api/client';
+import { getMembers, createMember, uploadAvatar } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import type { Member } from '../types';
 import './UserSelect.css';
@@ -15,6 +15,10 @@ export function UserSelect() {
   const { selectMember } = useCurrentMember();
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
+  const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedMemberRef = useRef<number | null>(null);
 
   const { data: members, isLoading } = useQuery({
     queryKey: ['members'],
@@ -30,6 +34,19 @@ export function UserSelect() {
     },
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: ({ memberId, file }: { memberId: number; file: File }) =>
+      uploadAvatar(memberId, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      setUploadingId(null);
+    },
+    onError: () => {
+      alert('Failed to upload avatar. Please try again.');
+      setUploadingId(null);
+    },
+  });
+
   const handleSelect = (member: Member) => {
     selectMember(member);
     navigate('/swipe');
@@ -40,6 +57,31 @@ export function UserSelect() {
     if (newName.trim()) {
       addMutation.mutate(newName.trim());
     }
+  };
+
+  const handleTouchStart = (memberId: number) => {
+    longPressTimer.current = setTimeout(() => {
+      selectedMemberRef.current = memberId;
+      fileInputRef.current?.click();
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const memberId = selectedMemberRef.current;
+    if (file && memberId) {
+      setUploadingId(memberId);
+      uploadMutation.mutate({ memberId, file });
+    }
+    // Reset input so same file can be selected again
+    e.target.value = '';
   };
 
   const getInitials = (name: string) => {
@@ -69,6 +111,11 @@ export function UserSelect() {
             key={member.id}
             className="member-card"
             onClick={() => handleSelect(member)}
+            onTouchStart={() => handleTouchStart(member.id)}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={() => handleTouchStart(member.id)}
+            onMouseUp={handleTouchEnd}
+            onMouseLeave={handleTouchEnd}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1 }}
@@ -79,8 +126,10 @@ export function UserSelect() {
               className="avatar"
               style={{ backgroundColor: getColor(index) }}
             >
-              {member.avatar_url ? (
-                <img src={member.avatar_url} alt={member.name} />
+              {uploadingId === member.id ? (
+                <div className="avatar-loading">...</div>
+              ) : member.avatar_url ? (
+                <img src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'}${member.avatar_url}`} alt={member.name} />
               ) : (
                 getInitials(member.name)
               )}
@@ -132,6 +181,14 @@ export function UserSelect() {
           </motion.form>
         </motion.div>
       )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
     </div>
   );
 }
