@@ -24,6 +24,8 @@ const api = axios.create({
 export const getMembers = () => api.get<Member[]>('/members').then(r => r.data);
 export const createMember = (data: { name: string; content_filter?: string }) =>
   api.post<Member>('/members', data).then(r => r.data);
+export const updateMember = (memberId: number, data: { name?: string; content_filter?: string }) =>
+  api.patch<Member>(`/members/${memberId}`, data).then(r => r.data);
 export const uploadAvatar = async (memberId: number, file: File): Promise<Member> => {
   const formData = new FormData();
   formData.append('file', file);

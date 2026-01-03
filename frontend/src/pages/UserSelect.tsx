@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getMembers, createMember, uploadAvatar } from '../api/client';
+import { getMembers, createMember, uploadAvatar, updateMember } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { getInitials, getColor, getAvatarUrl } from '../utils';
 import type { Member, ContentRating } from '../types';
@@ -25,7 +25,8 @@ export function UserSelect() {
   const [newName, setNewName] = useState('');
   const [newContentFilter, setNewContentFilter] = useState<ContentRating>('adult');
   const [uploadingId, setUploadingId] = useState<number | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editName, setEditName] = useState('');
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedMemberRef = useRef<number | null>(null);
@@ -59,6 +60,20 @@ export function UserSelect() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ memberId, name }: { memberId: number; name: string }) =>
+      updateMember(memberId, { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      setEditingMember(null);
+      setEditName('');
+    },
+    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
+      const message = error.response?.data?.detail || 'Failed to update member. Please try again.';
+      alert(message);
+    },
+  });
+
   const handleSelect = (member: Member) => {
     if (didLongPress.current) {
       didLongPress.current = false;
@@ -77,11 +92,12 @@ export function UserSelect() {
 
   const didLongPress = useRef(false);
 
-  const handleTouchStart = (memberId: number) => {
+  const handleTouchStart = (member: Member) => {
     didLongPress.current = false;
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true;
-      setEditingId(memberId);
+      setEditingMember(member);
+      setEditName(member.name);
     }, LONG_PRESS_DELAY_MS);
   };
 
@@ -92,11 +108,29 @@ export function UserSelect() {
     }
   };
 
-  const handleEditClick = (memberId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    selectedMemberRef.current = memberId;
-    fileInputRef.current?.click();
-    setEditingId(null);
+  const handleChangePhotoClick = () => {
+    if (editingMember) {
+      selectedMemberRef.current = editingMember.id;
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingMember && editName.trim()) {
+      // Only update if name changed
+      if (editName.trim() !== editingMember.name) {
+        updateMutation.mutate({ memberId: editingMember.id, name: editName.trim() });
+      } else {
+        setEditingMember(null);
+        setEditName('');
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMember(null);
+    setEditName('');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,9 +165,9 @@ export function UserSelect() {
             key={member.id}
             className="member-card"
             onClick={() => handleSelect(member)}
-            onTouchStart={() => handleTouchStart(member.id)}
+            onTouchStart={() => handleTouchStart(member)}
             onTouchEnd={handleTouchEnd}
-            onMouseDown={() => handleTouchStart(member.id)}
+            onMouseDown={() => handleTouchStart(member)}
             onMouseUp={handleTouchEnd}
             onMouseLeave={handleTouchEnd}
             onContextMenu={(e) => e.preventDefault()}
@@ -153,11 +187,6 @@ export function UserSelect() {
                 <img src={getAvatarUrl(member.avatar_url) || undefined} alt={member.name} />
               ) : (
                 getInitials(member.name)
-              )}
-              {editingId === member.id && (
-                <div className="avatar-edit-overlay" onClick={(e) => handleEditClick(member.id, e)}>
-                  <span>Change Photo</span>
-                </div>
               )}
             </div>
             <span className="name">{member.name}</span>
@@ -217,6 +246,48 @@ export function UserSelect() {
             <div className="buttons">
               <button type="button" onClick={() => setShowAdd(false)}>Cancel</button>
               <button type="submit" disabled={!newName.trim()}>Add</button>
+            </div>
+          </motion.form>
+        </motion.div>
+      )}
+
+      {editingMember && (
+        <motion.div
+          className="add-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={handleCancelEdit}
+        >
+          <motion.form
+            className="add-form"
+            initial={{ scale: 0.8, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleSaveEdit}
+          >
+            <h2>Edit Member</h2>
+            <input
+              type="text"
+              placeholder="Name"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              autoFocus
+            />
+            <button
+              type="button"
+              className="change-photo-btn"
+              onClick={handleChangePhotoClick}
+            >
+              Change Photo
+            </button>
+            <div className="buttons">
+              <button type="button" onClick={handleCancelEdit}>Cancel</button>
+              <button
+                type="submit"
+                disabled={!editName.trim() || updateMutation.isPending}
+              >
+                {updateMutation.isPending ? 'Saving...' : 'Save'}
+              </button>
             </div>
           </motion.form>
         </motion.div>
