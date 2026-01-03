@@ -4,10 +4,9 @@ from sqlalchemy import func
 from typing import List
 from datetime import datetime
 from ..database import get_db
-from ..models import MemberWatched, Member, Movie, WatchlistEntry
+from ..models import MemberWatched, Member, Movie, WatchlistEntry, Swipe, SwipeDirection
 from ..schemas import (
     MemberWatchedCreate,
-    MemberWatchedUpdate,
     MemberWatchedResponse,
     MemberWatchedWithMovie,
     MarkWatchedRequest,
@@ -78,23 +77,33 @@ def get_all_watched_history(
                 "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path),
             },
             "watched_at": w.watched_at,
-            "would_rewatch": w.would_rewatch,
         })
 
     return result
 
 
 @router.get("/history/stats")
-def get_watch_stats(db: Session = Depends(get_db)):
-    """Get watch statistics derived from per-member watched records"""
+def get_watch_stats(member_id: int = None, db: Session = Depends(get_db)):
+    """Get watch statistics. If member_id provided, returns member-specific stats."""
     current_year = datetime.now().year
 
-    # Count distinct movies watched (not individual member records)
-    total_watched = db.query(func.count(func.distinct(MemberWatched.movie_id))).scalar()
+    if member_id:
+        # Member-specific stats
+        total_watched = db.query(func.count(MemberWatched.id)).filter(
+            MemberWatched.member_id == member_id
+        ).scalar()
 
-    this_year = db.query(func.count(func.distinct(MemberWatched.movie_id))).filter(
-        MemberWatched.watched_at >= datetime(current_year, 1, 1)
-    ).scalar()
+        this_year = db.query(func.count(MemberWatched.id)).filter(
+            MemberWatched.member_id == member_id,
+            MemberWatched.watched_at >= datetime(current_year, 1, 1)
+        ).scalar()
+    else:
+        # Global stats (count distinct movies watched)
+        total_watched = db.query(func.count(func.distinct(MemberWatched.movie_id))).scalar()
+
+        this_year = db.query(func.count(func.distinct(MemberWatched.movie_id))).filter(
+            MemberWatched.watched_at >= datetime(current_year, 1, 1)
+        ).scalar()
 
     return {
         "total_watched": total_watched or 0,
@@ -105,7 +114,7 @@ def get_watch_stats(db: Session = Depends(get_db)):
 
 @router.post("/", response_model=List[MemberWatchedResponse])
 def mark_watched(request: MarkWatchedRequest, db: Session = Depends(get_db)):
-    """Mark a movie as watched for multiple members"""
+    """Mark a movie as watched for multiple members and flip their votes to N"""
     # Validate movie exists
     movie = db.query(Movie).filter(Movie.id == request.movie_id).first()
     if not movie:
@@ -116,53 +125,68 @@ def mark_watched(request: MarkWatchedRequest, db: Session = Depends(get_db)):
     if len(members) != len(request.member_ids):
         raise HTTPException(status_code=404, detail="One or more members not found")
 
-    # Deactivate watchlist entries for this movie
-    watchlist_entries = db.query(WatchlistEntry).filter(
-        WatchlistEntry.movie_id == request.movie_id,
-        WatchlistEntry.is_active == True
-    ).all()
-    for entry in watchlist_entries:
-        entry.is_active = False
+    # NOTE: We no longer deactivate watchlist entries here
+    # Pool membership is independent of watched state
 
     results = []
     for member_id in request.member_ids:
-        # Check if already watched
+        # Create or update watched record
         existing = db.query(MemberWatched).filter(
             MemberWatched.member_id == member_id,
             MemberWatched.movie_id == request.movie_id
         ).first()
 
         if existing:
-            # Update would_rewatch if already exists
-            existing.would_rewatch = request.would_rewatch
-            db.commit()
-            db.refresh(existing)
+            # Already watched, just return it
             results.append(existing)
         else:
             # Create new record
             watched = MemberWatched(
                 member_id=member_id,
-                movie_id=request.movie_id,
-                would_rewatch=request.would_rewatch
+                movie_id=request.movie_id
             )
             db.add(watched)
             db.commit()
             db.refresh(watched)
             results.append(watched)
 
+        # Flip swipe to NO for this member (they just watched it)
+        existing_swipe = db.query(Swipe).filter(
+            Swipe.member_id == member_id,
+            Swipe.movie_id == request.movie_id
+        ).first()
+
+        if existing_swipe:
+            existing_swipe.direction = SwipeDirection.NO
+            db.commit()
+        else:
+            # Create NO swipe if none exists
+            new_swipe = Swipe(
+                member_id=member_id,
+                movie_id=request.movie_id,
+                direction=SwipeDirection.NO
+            )
+            db.add(new_swipe)
+            db.commit()
+
     return results
 
 
 @router.get("/{member_id}", response_model=List[MemberWatchedWithMovie])
-def get_member_watched(member_id: int, db: Session = Depends(get_db)):
+def get_member_watched(member_id: int, limit: int = None, db: Session = Depends(get_db)):
     """Get all movies a member has watched"""
     member = db.query(Member).filter(Member.id == member_id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    watched = db.query(MemberWatched).filter(
+    query = db.query(MemberWatched).filter(
         MemberWatched.member_id == member_id
-    ).order_by(MemberWatched.watched_at.desc()).all()
+    ).order_by(MemberWatched.watched_at.desc())
+
+    if limit:
+        query = query.limit(limit)
+
+    watched = query.all()
 
     result = []
     for w in watched:
@@ -191,33 +215,9 @@ def get_member_watched(member_id: int, db: Session = Depends(get_db)):
                 "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path),
             },
             "watched_at": w.watched_at,
-            "would_rewatch": w.would_rewatch,
         })
 
     return result
-
-
-@router.patch("/{member_id}/{movie_id}", response_model=MemberWatchedResponse)
-def update_would_rewatch(
-    member_id: int,
-    movie_id: int,
-    update: MemberWatchedUpdate,
-    db: Session = Depends(get_db)
-):
-    """Update would_rewatch status for a member's watched movie"""
-    watched = db.query(MemberWatched).filter(
-        MemberWatched.member_id == member_id,
-        MemberWatched.movie_id == movie_id
-    ).first()
-
-    if not watched:
-        raise HTTPException(status_code=404, detail="Watched record not found")
-
-    watched.would_rewatch = update.would_rewatch
-    db.commit()
-    db.refresh(watched)
-
-    return watched
 
 
 @router.put("/{member_id}/{movie_id}", response_model=MemberWatchedResponse)
@@ -247,8 +247,7 @@ def toggle_watched(member_id: int, movie_id: int, db: Session = Depends(get_db))
     # Create new watched record (no side effects)
     watched = MemberWatched(
         member_id=member_id,
-        movie_id=movie_id,
-        would_rewatch=False
+        movie_id=movie_id
     )
     db.add(watched)
     db.commit()
