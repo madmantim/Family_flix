@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
-from typing import List
+from typing import List, Optional
 import json
 from ..database import get_db
 from ..models import Movie, WatchlistEntry, Member, ContentRating
@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get("/", response_model=List[WatchlistEntryResponse])
 def get_watchlist(
     active_only: bool = True,
-    added_by_id: int = None,
+    added_by_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     """Get all movies in the pool"""

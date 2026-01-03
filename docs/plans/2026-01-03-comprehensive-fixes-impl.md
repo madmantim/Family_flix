@@ -238,7 +238,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ---
 
-### [ ] P2-3: Add Optional type hints to nullable parameters
+### [x] P2-3: Add Optional type hints to nullable parameters
 
 **File:** `backend/app/routers/watchlist.py`
 **Lines:** ~15-21

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from ..database import get_db
 from ..models import MemberWatched, Member, Movie, WatchlistEntry, Swipe, SwipeDirection
@@ -21,7 +21,7 @@ router = APIRouter()
 
 @router.get("/history/all", response_model=List[MemberWatchedWithMovie])
 def get_all_watched_history(
-    year: int = None,
+    year: Optional[int] = None,
     limit: int = 50,
     db: Session = Depends(get_db)
 ):
@@ -62,7 +62,7 @@ def get_all_watched_history(
 
 
 @router.get("/history/stats")
-def get_watch_stats(member_id: int = None, db: Session = Depends(get_db)):
+def get_watch_stats(member_id: Optional[int] = None, db: Session = Depends(get_db)):
     """Get watch statistics. If member_id provided, returns member-specific stats."""
     current_year = datetime.now().year
 
@@ -154,7 +154,7 @@ def mark_watched(request: MarkWatchedRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/{member_id}", response_model=List[MemberWatchedWithMovie])
-def get_member_watched(member_id: int, limit: int = None, db: Session = Depends(get_db)):
+def get_member_watched(member_id: int, limit: Optional[int] = None, db: Session = Depends(get_db)):
     """Get all movies a member has watched"""
     member = db.query(Member).filter(Member.id == member_id).first()
     if not member:
