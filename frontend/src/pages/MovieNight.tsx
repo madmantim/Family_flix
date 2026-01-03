@@ -14,6 +14,7 @@ import type { MatchedMovie, Movie } from '../types';
 import './MovieNight.css';
 
 const AVATAR_COLORS = ['#E53935', '#8E24AA', '#1E88E5', '#43A047', '#FB8C00', '#00ACC1', '#5E35B1'];
+const TMDB_BASE_URL = 'https://www.themoviedb.org/movie/';
 
 type Stage = 'select' | 'browse' | 'winner' | 'completion';
 
@@ -52,7 +53,7 @@ export function MovieNight() {
   });
 
   const watchedMutation = useMutation({
-    mutationFn: () => markMovieWatched(result!.id, selectedWatchers, false),
+    mutationFn: () => markMovieWatched(result!.id, selectedWatchers),
     onSuccess: () => {
       // Reset and go back
       setStage('select');
@@ -103,6 +104,19 @@ export function MovieNight() {
 
   const openTrailer = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const openTmdb = (tmdbId: number) => {
+    window.open(`${TMDB_BASE_URL}${tmdbId}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const parseGenres = (genres: string | null): string[] => {
+    if (!genres) return [];
+    try {
+      return JSON.parse(genres);
+    } catch {
+      return [];
+    }
   };
 
   if (!memberId) {
@@ -261,18 +275,25 @@ export function MovieNight() {
                               )}
                             </div>
 
-                            {(matches[currentIndex].movie.rt_critic_score || matches[currentIndex].movie.rt_audience_score) && (
-                              <div className="rt-scores">
-                                {matches[currentIndex].movie.rt_critic_score && (
-                                  <span className="rt-score critic">
-                                    🍅 {matches[currentIndex].movie.rt_critic_score}%
-                                  </span>
-                                )}
-                                {matches[currentIndex].movie.rt_audience_score && (
-                                  <span className="rt-score audience">
-                                    🍿 {matches[currentIndex].movie.rt_audience_score}%
-                                  </span>
-                                )}
+                            <div className="meta-row">
+                              {matches[currentIndex].movie.runtime && (
+                                <span className="meta-item">{matches[currentIndex].movie.runtime} min</span>
+                              )}
+                              {matches[currentIndex].movie.vote_average && (
+                                <span className="meta-item">TMDB {(matches[currentIndex].movie.vote_average / 10).toFixed(1)}</span>
+                              )}
+                              {matches[currentIndex].movie.rt_critic_score && (
+                                <span className="rt-score critic">
+                                  🍅 {matches[currentIndex].movie.rt_critic_score}%
+                                </span>
+                              )}
+                            </div>
+
+                            {matches[currentIndex].movie.genres && (
+                              <div className="genres">
+                                {parseGenres(matches[currentIndex].movie.genres).slice(0, 3).map((g) => (
+                                  <span key={g} className="genre">{g}</span>
+                                ))}
                               </div>
                             )}
 
@@ -282,16 +303,26 @@ export function MovieNight() {
                           </div>
 
                           <div className="browse-actions">
-                            {matches[currentIndex].movie.trailer_url && (
+                            <div className="action-buttons-row">
+                              {matches[currentIndex].movie.trailer_url && (
+                                <motion.button
+                                  className="btn-secondary"
+                                  onClick={() => openTrailer(matches[currentIndex].movie.trailer_url!)}
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
+                                >
+                                  ▶ Trailer
+                                </motion.button>
+                              )}
                               <motion.button
-                                className="trailer-btn"
-                                onClick={() => openTrailer(matches[currentIndex].movie.trailer_url!)}
+                                className="btn-secondary"
+                                onClick={() => openTmdb(matches[currentIndex].movie.tmdb_id)}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                               >
-                                ▶ Watch Trailer
+                                More
                               </motion.button>
-                            )}
+                            </div>
 
                             <motion.button
                               className="watch-this-btn"
