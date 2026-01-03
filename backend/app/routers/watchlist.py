@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 import json
 from ..database import get_db
@@ -19,7 +19,10 @@ def get_watchlist(
     db: Session = Depends(get_db)
 ):
     """Get all movies in the pool"""
-    query = db.query(WatchlistEntry)
+    query = db.query(WatchlistEntry).options(
+        joinedload(WatchlistEntry.movie),
+        joinedload(WatchlistEntry.added_by)
+    )
 
     if active_only:
         query = query.filter(WatchlistEntry.is_active == True)

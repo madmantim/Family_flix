@@ -50,7 +50,7 @@ docker-compose up --build  # From project root
 | Movie | Cached movie metadata from TMDB with RT scores |
 | WatchlistEntry | Shared pool entry (movie, added_by, source, is_active) |
 | Swipe | Individual YES/NO vote on a movie |
-| MemberWatched | Per-member watch history with would_rewatch flag |
+| MemberWatched | Per-member watch history with timestamp |
 
 **Routers (`app/routers/`):**
 
@@ -61,7 +61,7 @@ docker-compose up --build  # From project root
 | swipes | `/api/swipes` | Vote recording, swipe queue (filtered by content rating) |
 | watchlist | `/api/watchlist` | Add/remove movies, auto-fetches RT scores + trailers |
 | movie_night | `/api/movie-night` | Match calculation with content filtering |
-| watched | `/api/watched` | Watch history, stats, would_rewatch tracking |
+| watched | `/api/watched` | Watch history and stats per member |
 
 **Services (`app/services/`):**
 - `tmdb.py` - TMDB API integration (search, trending, discover, trailers)
@@ -110,16 +110,15 @@ TypeScript interfaces matching all backend schemas (Member, Movie, Swipe, Watchl
 1. Filter by most restrictive content rating among present members
 2. For each active watchlist movie:
    - Count YES votes from present members
-   - Check eligibility (not watched OR would_rewatch=true)
-   - Full match = all present + voted YES
-3. Sort by: full matches first → most YES votes → source priority (manual > curated > trending) → newest
+   - Count N(W) = members who didn't vote YES but have watched the movie
+3. Sort by: YES count (descending) → N(W) count (ascending) → recency (newest first)
 
 ### External APIs
 
 | API | Purpose | Auth |
 |-----|---------|------|
 | TMDB | Movie search, metadata, posters, trailers | Bearer token (TMDB_ACCESS_TOKEN) |
-| OMDb | Rotten Tomatoes critic scores | API key (OMDB_API_KEY) |
+| OMDb | Rotten Tomatoes critic score (Tomatometer only) | API key (OMDB_API_KEY) |
 
 **Environment Variables:**
 ```
@@ -134,7 +133,7 @@ DATABASE_URL=sqlite:///./family_flix.db
 Backend tests in `tests/`:
 - `test_members.py` - Member CRUD
 - `test_swipes.py` - Vote recording, queue filtering
-- `test_matching.py` - Match calculation, eligibility rules
+- `test_matching.py` - Match calculation and sorting logic
 - `test_member_watched.py` - Watch history, stats
 - `test_ratings_and_trailers.py` - TMDB/OMDb integration
 - `test_discover.py` - Discover endpoint
@@ -143,5 +142,6 @@ Backend tests in `tests/`:
 ## Project Documentation
 
 - `PROMPT.md` - Master implementation specification
-- `docs/plans/2026-01-01-family-flix-picker-design.md` - Core design document
+- `docs/plans/` - Active feature designs and implementation plans
 - `docs/archive/` - Completed feature plans and implementation docs
+- `deploy/README.md` - Deployment quick-start guide
