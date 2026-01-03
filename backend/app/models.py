@@ -105,7 +105,6 @@ class MemberWatched(Base):
     member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
     movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False)
     watched_at = Column(DateTime, default=datetime.utcnow)
-    would_rewatch = Column(Boolean, default=False)
 
     member = relationship("Member", back_populates="watched_movies")
     movie = relationship("Movie", back_populates="member_watched")
