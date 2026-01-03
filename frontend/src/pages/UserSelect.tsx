@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getMembers, createMember, uploadAvatar } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
-import { getInitials, getColor } from '../utils';
+import { getInitials, getColor, getAvatarUrl } from '../utils';
 import type { Member } from '../types';
 import './UserSelect.css';
 
@@ -140,7 +140,7 @@ export function UserSelect() {
               {uploadingId === member.id ? (
                 <div className="avatar-loading">...</div>
               ) : member.avatar_url ? (
-                <img src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${member.avatar_url}`} alt={member.name} />
+                <img src={getAvatarUrl(member.avatar_url) || undefined} alt={member.name} />
               ) : (
                 getInitials(member.name)
               )}

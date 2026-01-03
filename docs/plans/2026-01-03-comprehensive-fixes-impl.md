@@ -540,7 +540,7 @@ cd /Users/tim/Claude/Movie_picker/frontend && npm run lint && npm run build
 
 ---
 
-### [ ] P3-8: Use getAvatarUrl consistently
+### [x] P3-8: Use getAvatarUrl consistently
 
 **File:** `frontend/src/pages/UserSelect.tsx`
 **Line:** ~141
