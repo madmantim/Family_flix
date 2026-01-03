@@ -65,9 +65,12 @@ export function Watchlist() {
 
   const addMutation = useMutation({
     mutationFn: (tmdbId: number) => addToWatchlist(tmdbId, memberId!),
-    onSuccess: () => {
+    onSuccess: async (entry) => {
+      // Auto-swipe "yes" for the user who added the movie
+      await recordSwipe(memberId!, entry.movie.id, 'yes', false);
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
       queryClient.invalidateQueries({ queryKey: ['swipeQueue'] });
+      queryClient.invalidateQueries({ queryKey: ['memberSwipes', memberId] });
       setShowSearch(false);
       setSearchQuery('');
       setSearchResults([]);
