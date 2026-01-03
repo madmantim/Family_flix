@@ -1,7 +1,6 @@
 import axios from 'axios';
 import type {
   Member,
-  Movie,
   WatchlistEntry,
   SwipeQueue,
   MovieNightResponse,
@@ -23,12 +22,8 @@ const api = axios.create({
 
 // Members
 export const getMembers = () => api.get<Member[]>('/members').then(r => r.data);
-export const getMember = (id: number) => api.get<Member>(`/members/${id}`).then(r => r.data);
 export const createMember = (data: { name: string; content_filter?: string }) =>
   api.post<Member>('/members', data).then(r => r.data);
-export const updateMember = (id: number, data: Partial<Member>) =>
-  api.patch<Member>(`/members/${id}`, data).then(r => r.data);
-export const deleteMember = (id: number) => api.delete(`/members/${id}`);
 export const uploadAvatar = async (memberId: number, file: File): Promise<Member> => {
   const formData = new FormData();
   formData.append('file', file);
@@ -41,11 +36,8 @@ export const uploadAvatar = async (memberId: number, file: File): Promise<Member
 // Movies
 export const searchMovies = (query: string, page = 1) =>
   api.get<TMDBSearchResponse>('/movies/search', { params: { query, page } }).then(r => r.data);
-export const getTrending = (page = 1) =>
-  api.get<TMDBSearchResponse>('/movies/trending', { params: { page } }).then(r => r.data);
 export const discoverMovies = (tab: 'popular' | 'highly-rated', page = 1) =>
   api.get<TMDBSearchResponse>('/movies/discover', { params: { tab, page } }).then(r => r.data);
-export const getMovie = (id: number) => api.get<Movie>(`/movies/${id}`).then(r => r.data);
 
 // Swipes
 export const getSwipeQueue = (memberId: number, limit = 20) =>

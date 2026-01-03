@@ -86,7 +86,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
   - Use Set for O(1) lookups instead of O(n) find
   - Test: `npm run build` must pass
 
-- [ ] **F3: Remove unused API exports**
+- [x] **F3: Remove unused API exports**
   - File: `frontend/src/api/client.ts`
   - Remove: `getMember`, `updateMember`, `deleteMember`, `getTrending`, `getMovie`
   - Or add `// @ts-expect-error Reserved for future use` comment
