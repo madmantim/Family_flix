@@ -1,22 +1,39 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getWatchHistory, getWatchStats } from '../api/client';
+import { getWatchHistory, getWatchStats, recordSwipe, getMemberSwipes } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
+import { BottomNav } from '../components/BottomNav';
 import './History.css';
 
 export function History() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { memberId } = useCurrentMember();
 
   const { data: history, isLoading } = useQuery({
-    queryKey: ['history'],
-    queryFn: () => getWatchHistory(),
+    queryKey: ['history', memberId],
+    queryFn: () => getWatchHistory(memberId!),
+    enabled: !!memberId,
   });
 
   const { data: stats } = useQuery({
-    queryKey: ['stats'],
-    queryFn: getWatchStats,
+    queryKey: ['stats', memberId],
+    queryFn: () => getWatchStats(memberId!),
+    enabled: !!memberId,
+  });
+
+  const { data: memberSwipes } = useQuery({
+    queryKey: ['memberSwipes', memberId],
+    queryFn: () => getMemberSwipes(memberId!),
+    enabled: !!memberId,
+  });
+
+  const rewatchMutation = useMutation({
+    mutationFn: (movieId: number) => recordSwipe(memberId!, movieId, 'yes'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['memberSwipes', memberId] });
+    },
   });
 
   if (!memberId) {
@@ -67,37 +84,46 @@ export function History() {
         </div>
       ) : (
         <div className="history-list">
-          {history?.map((entry, i) => (
-            <motion.div
-              key={entry.id}
-              className="history-item"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <div
-                className="poster"
-                style={{
-                  backgroundImage: entry.movie.poster_url
-                    ? `url(${entry.movie.poster_url})`
-                    : undefined,
-                }}
-              />
-              <div className="info">
-                <h3>{entry.movie.title}</h3>
-                <span className="date">{formatDate(entry.watched_at)}</span>
-              </div>
-            </motion.div>
-          ))}
+          {history?.map((entry, i) => {
+            const hasYesVote = memberSwipes?.some(
+              s => s.movie_id === entry.movie.id && s.direction === 'yes'
+            );
+
+            return (
+              <motion.div
+                key={entry.id}
+                className="history-item"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <div
+                  className="poster"
+                  style={{
+                    backgroundImage: entry.movie.poster_url
+                      ? `url(${entry.movie.poster_url})`
+                      : undefined,
+                  }}
+                />
+                <div className="info">
+                  <h3>{entry.movie.title}</h3>
+                  <span className="date">{formatDate(entry.watched_at)}</span>
+                </div>
+                <button
+                  className={`rewatch-btn ${hasYesVote ? 'active' : ''}`}
+                  onClick={() => rewatchMutation.mutate(entry.movie.id)}
+                  disabled={rewatchMutation.isPending || hasYesVote}
+                  title={hasYesVote ? 'On your watchlist' : 'Want to watch again'}
+                >
+                  {hasYesVote ? '♥' : '♡'}
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
-      <nav className="bottom-nav">
-        <button onClick={() => navigate('/swipe')}>Swipe</button>
-        <button onClick={() => navigate('/movie-night')}>Movie Night</button>
-        <button onClick={() => navigate('/watchlist')}>Watchlist</button>
-        <button className="active">History</button>
-      </nav>
+      <BottomNav />
     </div>
   );
 }

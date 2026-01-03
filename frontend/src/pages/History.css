@@ -20,8 +20,8 @@
   gap: 1rem;
   margin: 0 1rem 1.5rem;
   padding: 1.25rem;
-  background: linear-gradient(135deg, rgba(229, 9, 20, 0.2), rgba(229, 9, 20, 0.05));
-  border: 1px solid rgba(229, 9, 20, 0.3);
+  background: linear-gradient(135deg, var(--color-brand-muted), var(--color-brand-subtle));
+  border: 1px solid rgba(212, 160, 83, 0.35);
   border-radius: 16px;
 }
 
@@ -57,13 +57,19 @@
 
 .history-page .empty button {
   margin-top: 1rem;
-  background: #e50914;
+  background: var(--color-brand);
   color: #fff;
   border: none;
   padding: 1rem 2rem;
   font-size: 1rem;
+  font-weight: 600;
   border-radius: 12px;
   cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.history-page .empty button:hover {
+  opacity: 0.9;
 }
 
 .history-list {
@@ -108,28 +114,28 @@
   margin-top: 0.25rem;
 }
 
-.history-page .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-around;
-  padding: 0.75rem;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 0.75rem);
-  background: rgba(0, 0, 0, 0.9);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.history-page .bottom-nav button {
+.history-item .rewatch-btn {
   background: none;
   border: none;
-  color: #666;
-  font-size: 0.85rem;
-  padding: 0.5rem 1rem;
+  font-size: 1.5rem;
   cursor: pointer;
+  padding: 0.5rem;
+  color: #666;
+  transition: color 0.2s, transform 0.2s;
+  flex-shrink: 0;
+  align-self: center;
 }
 
-.history-page .bottom-nav button.active {
-  color: #e50914;
+.history-item .rewatch-btn:hover:not(:disabled) {
+  transform: scale(1.1);
 }
+
+.history-item .rewatch-btn.active {
+  color: #e91e63;
+}
+
+.history-item .rewatch-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
