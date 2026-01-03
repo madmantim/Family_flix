@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useMemo } from 'react';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   getWatchlist,
@@ -58,11 +58,43 @@ export function Watchlist() {
     enabled: !!memberId,
   });
 
-  const { data: discoverResults, isLoading: isDiscoverLoading } = useQuery({
+  const {
+    data: discoverData,
+    isLoading: isDiscoverLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['discover', discoverTab],
-    queryFn: () => discoverMovies(discoverTab),
+    queryFn: ({ pageParam = 1 }) => discoverMovies(discoverTab, pageParam),
+    getNextPageParam: (lastPage) => {
+      if (lastPage.page < lastPage.total_pages) {
+        return lastPage.page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
     enabled: showDiscover,
   });
+
+  // Flatten all pages of discover results into a single array
+  const discoverResults = useMemo(() => {
+    if (!discoverData?.pages) return [];
+    return discoverData.pages.flatMap((page) => page.results);
+  }, [discoverData]);
+
+  // Scroll handler for infinite scroll
+  const discoverScrollRef = useRef<HTMLDivElement>(null);
+  const handleDiscoverScroll = useCallback(() => {
+    const container = discoverScrollRef.current;
+    if (!container || isFetchingNextPage || !hasNextPage) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    // Load more when within 200px of bottom
+    if (scrollHeight - scrollTop - clientHeight < 200) {
+      fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const addMutation = useMutation({
     mutationFn: (tmdbId: number) => addToWatchlist(tmdbId, memberId!),
@@ -264,7 +296,12 @@ export function Watchlist() {
               exit={{ y: 100 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h2>Add Movie</h2>
+              <div className="search-header">
+                <h2>Add Movie</h2>
+                <button className="close-btn" onClick={() => setShowSearch(false)}>
+                  ✕
+                </button>
+              </div>
               <div className="search-bar">
                 <input
                   type="text"
@@ -314,10 +351,6 @@ export function Watchlist() {
                   );
                 })}
               </div>
-
-              <button className="close-btn" onClick={() => setShowSearch(false)}>
-                Close
-              </button>
             </motion.div>
           </motion.div>
         )}
@@ -361,40 +394,54 @@ export function Watchlist() {
                 </button>
               </div>
 
-              <div className="discover-results">
+              <div
+                className="discover-results"
+                ref={discoverScrollRef}
+                onScroll={handleDiscoverScroll}
+              >
                 {isDiscoverLoading ? (
                   <div className="loading">Loading...</div>
                 ) : (
-                  <div className="discover-grid">
-                    {discoverResults?.results
-                      .filter(movie => !watchlist?.some(w => w.movie.tmdb_id === movie.tmdb_id))
-                      .map((movie) => (
-                        <motion.div
-                          key={movie.tmdb_id}
-                          className="discover-item"
-                          initial={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          layout
-                          onClick={() => addMutation.mutate(movie.tmdb_id)}
-                        >
-                          <div
-                            className="poster"
-                            style={{
-                              backgroundImage: movie.poster_url
-                                ? `url(${movie.poster_url})`
-                                : undefined,
-                            }}
+                  <>
+                    <div className="discover-grid">
+                      {discoverResults
+                        .filter(movie => !watchlist?.some(w => w.movie.tmdb_id === movie.tmdb_id))
+                        .map((movie) => (
+                          <motion.div
+                            key={movie.tmdb_id}
+                            className="discover-item"
+                            initial={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            layout
+                            onClick={() => addMutation.mutate(movie.tmdb_id)}
                           >
-                            {!movie.poster_url && <span>No Poster</span>}
-                            <div className="add-overlay">+</div>
-                          </div>
-                          <div className="title">{movie.title}</div>
-                          {movie.vote_average && (
-                            <div className="rating">★ {movie.vote_average.toFixed(1)}</div>
-                          )}
-                        </motion.div>
-                      ))}
-                  </div>
+                            <div
+                              className="poster"
+                              style={{
+                                backgroundImage: movie.poster_url
+                                  ? `url(${movie.poster_url})`
+                                  : undefined,
+                              }}
+                            >
+                              {!movie.poster_url && <span>No Poster</span>}
+                              <div className="add-overlay">+</div>
+                            </div>
+                            <div className="title">{movie.title}</div>
+                            {movie.vote_average && (
+                              <div className="rating">★ {movie.vote_average.toFixed(1)}</div>
+                            )}
+                          </motion.div>
+                        ))}
+                    </div>
+                    {isFetchingNextPage && (
+                      <div className="loading-more">Loading more...</div>
+                    )}
+                    {hasNextPage && !isFetchingNextPage && (
+                      <button className="load-more-btn" onClick={() => fetchNextPage()}>
+                        Load More
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </motion.div>

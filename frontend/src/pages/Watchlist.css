@@ -165,22 +165,42 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1rem;
-  padding-top: calc(env(safe-area-inset-top, 0) + 1rem);
   max-width: 500px;
   width: 100%;
   margin: 0 auto;
+  background: #1a1a2e;
+  overflow: hidden;
 }
 
-.search-content h2 {
+.search-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  padding-top: calc(env(safe-area-inset-top, 0) + 1rem);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-header h2 {
+  margin: 0;
   color: #fff;
-  margin: 0 0 1rem;
+  font-size: 1.5rem;
+}
+
+.search-header .close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin: 0;
 }
 
 .search-bar {
   display: flex;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  padding: 1rem 1.5rem;
 }
 
 .search-bar input {
@@ -211,6 +231,9 @@
 .search-results {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 1.5rem 1rem;
+  overscroll-behavior: contain;
 }
 
 .search-result {
@@ -353,6 +376,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 80px);
 }
 
 .discover-grid {
@@ -418,6 +442,33 @@
   text-align: center;
 }
 
+/* Infinite scroll loading states */
+.loading-more {
+  text-align: center;
+  color: #888;
+  padding: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.load-more-btn {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.load-more-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 /* Error message for add failures */
 .add-error {
   background: rgba(239, 68, 68, 0.2);
@@ -425,7 +476,7 @@
   color: #f87171;
   padding: 0.75rem 1rem;
   border-radius: 8px;
-  margin-bottom: 1rem;
+  margin: 0 1.5rem 1rem;
   font-size: 0.9rem;
   text-align: center;
   animation: shake 0.3s ease-in-out;
