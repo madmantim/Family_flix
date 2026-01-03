@@ -217,12 +217,13 @@ export function Watchlist() {
                 {!entry.movie.poster_url && <span>No Poster</span>}
                 <button
                   className="remove-btn"
+                  disabled={removeMutation.isPending}
                   onClick={(e) => {
                     e.stopPropagation();
                     removeMutation.mutate(entry.id);
                   }}
                 >
-                  ✕
+                  {removeMutation.isPending ? '...' : '✕'}
                 </button>
               </div>
               <div className="title">{entry.movie.title}</div>

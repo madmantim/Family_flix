@@ -475,7 +475,7 @@ cd /Users/tim/Claude/Movie_picker/frontend && npm run lint && npm run build
 
 ---
 
-### [ ] P3-6: Add loading/disabled states to mutation buttons
+### [x] P3-6: Add loading/disabled states to mutation buttons
 
 **File:** `frontend/src/pages/Watchlist.tsx`
 **Lines:** ~204-208 (remove button)
