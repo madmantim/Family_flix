@@ -1,6 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import {
@@ -8,7 +7,6 @@ import {
   getMatches,
   markMovieWatched,
 } from '../api/client';
-import { useCurrentMember } from '../hooks/useCurrentMember';
 import { BottomNav } from '../components/BottomNav';
 import { TMDB_BASE_URL, getInitials, getColor, getAvatarUrl, parseGenres } from '../utils';
 import type { MatchedMovie, Movie } from '../types';
@@ -17,8 +15,6 @@ import './MovieNight.css';
 type Stage = 'select' | 'browse' | 'winner' | 'completion';
 
 export function MovieNight() {
-  const navigate = useNavigate();
-  const { memberId } = useCurrentMember();
   const [stage, setStage] = useState<Stage>('select');
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
   const [matches, setMatches] = useState<MatchedMovie[]>([]);
@@ -96,11 +92,6 @@ export function MovieNight() {
   const openTmdb = (tmdbId: number) => {
     window.open(`${TMDB_BASE_URL}${tmdbId}`, '_blank', 'noopener,noreferrer');
   };
-
-  if (!memberId) {
-    navigate('/');
-    return null;
-  }
 
   return (
     <div className="movie-night-page">

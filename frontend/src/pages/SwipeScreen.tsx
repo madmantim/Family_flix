@@ -232,11 +232,6 @@ export function SwipeScreen() {
     [availableMovies, swipeMutation, watched]
   );
 
-  if (!memberId) {
-    navigate('/');
-    return null;
-  }
-
   if (isLoading) {
     return <div className="swipe-screen loading">Loading movies...</div>;
   }

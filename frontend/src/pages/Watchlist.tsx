@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   getWatchlist,
@@ -31,7 +30,6 @@ const WATCHLIST_HELP_ITEMS = [
 ];
 
 export function Watchlist() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { memberId } = useCurrentMember();
   const [showSearch, setShowSearch] = useState(false);
@@ -139,11 +137,6 @@ export function Watchlist() {
   const likedMovies = useMemo(() => {
     return watchlist?.filter((entry) => yesMovieIds.has(entry.movie.id)) ?? [];
   }, [watchlist, yesMovieIds]);
-
-  if (!memberId) {
-    navigate('/');
-    return null;
-  }
 
   return (
     <div className="watchlist-page">

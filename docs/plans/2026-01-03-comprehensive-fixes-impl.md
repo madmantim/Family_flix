@@ -273,7 +273,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ## Phase 3: Frontend React Patterns
 
-### [ ] P3-1: Fix navigation side effects in render body
+### [x] P3-1: Fix navigation side effects in render body
 
 **Files:**
 - `frontend/src/pages/SwipeScreen.tsx` (~line 235)

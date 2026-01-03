@@ -37,11 +37,6 @@ export function History() {
     },
   });
 
-  if (!memberId) {
-    navigate('/');
-    return null;
-  }
-
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-AU', {
