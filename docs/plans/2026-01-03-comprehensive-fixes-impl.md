@@ -647,7 +647,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ---
 
-### [ ] P4-2: Add tests for watched.py toggle and delete endpoints
+### [x] P4-2: Add tests for watched.py toggle and delete endpoints
 
 **File:** `backend/tests/test_member_watched.py`
 

@@ -244,3 +244,84 @@ class TestMovieNightMatching:
         assert dune_match is not None
         assert dune_match["is_full_match"] == True
         assert dune_match["yes_votes"] == 2
+
+
+class TestWatchedToggleAndDelete:
+    """Test PUT toggle and DELETE endpoints for watched status"""
+
+    def test_toggle_watched_marks_as_watched(self, client, db):
+        """Test PUT endpoint marks movie as watched."""
+        member = Member(name="Tim", content_filter=ContentRating.ADULT)
+        db.add(member)
+        db.commit()
+
+        movie = Movie(tmdb_id=438631, title="Dune", year=2021, content_rating=ContentRating.TEEN)
+        db.add(movie)
+        db.commit()
+
+        # Toggle on (mark watched)
+        response = client.put(f"/api/watched/{member.id}/{movie.id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["member_id"] == member.id
+        assert data["movie_id"] == movie.id
+
+    def test_toggle_watched_returns_existing(self, client, db):
+        """Test PUT returns existing record if already watched."""
+        member = Member(name="Tim", content_filter=ContentRating.ADULT)
+        db.add(member)
+        db.commit()
+
+        movie = Movie(tmdb_id=438631, title="Dune", year=2021, content_rating=ContentRating.TEEN)
+        db.add(movie)
+        db.commit()
+
+        # Mark as watched first
+        watched = MemberWatched(member_id=member.id, movie_id=movie.id)
+        db.add(watched)
+        db.commit()
+
+        # Toggle again - should return existing
+        response = client.put(f"/api/watched/{member.id}/{movie.id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == watched.id
+
+    def test_delete_watched_record(self, client, db):
+        """Test DELETE endpoint removes watched record."""
+        member = Member(name="Tim", content_filter=ContentRating.ADULT)
+        db.add(member)
+        db.commit()
+
+        movie = Movie(tmdb_id=438631, title="Dune", year=2021, content_rating=ContentRating.TEEN)
+        db.add(movie)
+        db.commit()
+
+        # Mark as watched first
+        watched = MemberWatched(member_id=member.id, movie_id=movie.id)
+        db.add(watched)
+        db.commit()
+
+        # Delete
+        response = client.delete(f"/api/watched/{member.id}/{movie.id}")
+        assert response.status_code == 204
+
+        # Verify gone
+        get_response = client.get(f"/api/watched/{member.id}")
+        data = get_response.json()
+        movie_ids = [w["movie"]["id"] for w in data]
+        assert movie.id not in movie_ids
+
+    def test_delete_nonexistent_watched(self, client, db):
+        """Test deleting non-existent watched record returns 404."""
+        member = Member(name="Tim", content_filter=ContentRating.ADULT)
+        db.add(member)
+        db.commit()
+
+        movie = Movie(tmdb_id=438631, title="Dune", year=2021, content_rating=ContentRating.TEEN)
+        db.add(movie)
+        db.commit()
+
+        # Try to delete without having marked watched
+        response = client.delete(f"/api/watched/{member.id}/{movie.id}")
+        assert response.status_code == 404
