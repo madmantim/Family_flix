@@ -781,7 +781,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ## Phase 5: Infrastructure
 
-### [ ] P5-1: Add Docker health check for backend
+### [x] P5-1: Add Docker health check for backend
 
 **File:** `docker-compose.yml` (root) and `deploy/docker-compose.yml`
 
