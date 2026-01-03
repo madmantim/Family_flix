@@ -74,9 +74,6 @@ class OMDbService:
         except httpx.TimeoutException:
             logger.error("OMDb get_ratings_by_imdb_id timeout for imdb_id: %s", imdb_id)
             return None
-        except httpx.HTTPStatusError as e:
-            logger.error("OMDb get_ratings_by_imdb_id HTTP error for imdb_id %s: %s", imdb_id, e)
-            return None
 
     async def get_ratings_by_title(self, title: str, year: Optional[int] = None) -> Optional[dict]:
         """Get movie ratings from OMDb by title search"""
@@ -126,9 +123,6 @@ class OMDbService:
                 }
         except httpx.TimeoutException:
             logger.error("OMDb get_ratings_by_title timeout for title: %s", title)
-            return None
-        except httpx.HTTPStatusError as e:
-            logger.error("OMDb get_ratings_by_title HTTP error for title %s: %s", title, e)
             return None
 
 

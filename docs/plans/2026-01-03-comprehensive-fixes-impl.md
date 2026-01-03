@@ -167,7 +167,7 @@ def test_update_member_duplicate_name(client, sample_members):
 
 ## Phase 2: Backend Code Quality
 
-### [ ] P2-1: Remove dead HTTPStatusError except clause in OMDb
+### [x] P2-1: Remove dead HTTPStatusError except clause in OMDb
 
 **File:** `backend/app/services/omdb.py`
 **Lines:** ~77-79
