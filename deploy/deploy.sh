@@ -41,7 +41,7 @@ done
 
 # Helper to run commands on LXC via Proxmox
 run_on_lxc() {
-    ssh "root@${PROXMOX_HOST}" "pct exec ${LXC_ID} -- $1"
+    ssh "root@${PROXMOX_HOST}" "pct exec ${LXC_ID} -- bash -c '$1'"
 }
 
 # Helper to copy files to LXC via Proxmox
