@@ -573,7 +573,7 @@ cd /Users/tim/Claude/Movie_picker/frontend && npm run lint && npm run build
 
 ## Phase 4: Testing Coverage
 
-### [ ] P4-1: Add tests for movies search and trending endpoints
+### [x] P4-1: Add tests for movies search and trending endpoints
 
 **File to Create:** `backend/tests/test_movies.py`
 
