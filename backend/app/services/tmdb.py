@@ -120,6 +120,7 @@ class TMDBService:
         release_date_lte: str = None,
         vote_count_gte: int = None,
         with_release_type: str = "4|5",
+        region: str = "US",
         page: int = 1
     ) -> dict:
         """Discover movies with flexible filters for home availability"""
@@ -127,12 +128,15 @@ class TMDBService:
             "page": page,
             "sort_by": sort_by,
             "with_release_type": with_release_type,
+            "region": region,
             "include_adult": False,
         }
+        # Use release_date (not primary_release_date) to filter by digital/physical
+        # release date when combined with with_release_type
         if release_date_gte:
-            params["primary_release_date.gte"] = release_date_gte
+            params["release_date.gte"] = release_date_gte
         if release_date_lte:
-            params["primary_release_date.lte"] = release_date_lte
+            params["release_date.lte"] = release_date_lte
         if vote_count_gte:
             params["vote_count.gte"] = vote_count_gte
 
