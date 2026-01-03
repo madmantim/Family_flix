@@ -39,6 +39,7 @@ export function Watchlist() {
   const [selectedEntry, setSelectedEntry] = useState<WatchlistEntry | null>(null);
   const [showDiscover, setShowDiscover] = useState(false);
   const [discoverTab, setDiscoverTab] = useState<'popular' | 'highly-rated'>('popular');
+  const [addError, setAddError] = useState<string | null>(null);
 
   const { data: watchlist, isLoading } = useQuery({
     queryKey: ['watchlist'],
@@ -73,6 +74,7 @@ export function Watchlist() {
         console.error('Auto-swipe failed:', error);
         // Operation still succeeds for add, just the auto-swipe failed
       }
+      setAddError(null);
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
       queryClient.invalidateQueries({ queryKey: ['swipeQueue'] });
       queryClient.invalidateQueries({ queryKey: ['memberSwipes', memberId] });
@@ -80,8 +82,12 @@ export function Watchlist() {
       setSearchQuery('');
       setSearchResults([]);
     },
-    onError: (error) => {
+    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
       console.error('Failed to add movie:', error);
+      const message = error.response?.data?.detail || 'Failed to add movie';
+      setAddError(message);
+      // Auto-clear error after 3 seconds
+      setTimeout(() => setAddError(null), 3000);
     },
   });
 
@@ -152,6 +158,15 @@ export function Watchlist() {
     });
     return ids;
   }, [memberSwipes]);
+
+  // Memoized set of TMDB IDs already in watchlist (O(1) lookups for duplicate detection)
+  const watchlistTmdbIds = useMemo(() => {
+    const ids = new Set<number>();
+    watchlist?.forEach((entry) => {
+      ids.add(entry.movie.tmdb_id);
+    });
+    return ids;
+  }, [watchlist]);
 
   // Memoized filtered watchlist (only movies the member has voted YES on)
   const likedMovies = useMemo(() => {
@@ -264,30 +279,40 @@ export function Watchlist() {
                 </button>
               </div>
 
+              {addError && (
+                <div className="add-error">{addError}</div>
+              )}
+
               <div className="search-results">
-                {searchResults.map((movie) => (
-                  <motion.div
-                    key={movie.tmdb_id}
-                    className="search-result"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    onClick={() => addMutation.mutate(movie.tmdb_id)}
-                  >
-                    <div
-                      className="poster"
-                      style={{
-                        backgroundImage: movie.poster_url
-                          ? `url(${movie.poster_url})`
-                          : undefined,
-                      }}
-                    />
-                    <div className="info">
-                      <div className="title">{movie.title}</div>
-                      <div className="year">{movie.year}</div>
-                    </div>
-                    <div className="add">+</div>
-                  </motion.div>
-                ))}
+                {searchResults.map((movie) => {
+                  const isInWatchlist = watchlistTmdbIds.has(movie.tmdb_id);
+                  return (
+                    <motion.div
+                      key={movie.tmdb_id}
+                      className={`search-result ${isInWatchlist ? 'in-watchlist' : ''}`}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      onClick={() => !isInWatchlist && addMutation.mutate(movie.tmdb_id)}
+                    >
+                      <div
+                        className="poster"
+                        style={{
+                          backgroundImage: movie.poster_url
+                            ? `url(${movie.poster_url})`
+                            : undefined,
+                        }}
+                      />
+                      <div className="info">
+                        <div className="title">{movie.title}</div>
+                        <div className="year">{movie.year}</div>
+                        {isInWatchlist && <div className="in-list-label">In Watchlist</div>}
+                      </div>
+                      <div className={`add ${isInWatchlist ? 'added' : ''}`}>
+                        {isInWatchlist ? '✓' : '+'}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
 
               <button className="close-btn" onClick={() => setShowSearch(false)}>

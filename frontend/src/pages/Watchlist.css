@@ -417,3 +417,44 @@
   color: #fbbf24;
   text-align: center;
 }
+
+/* Error message for add failures */
+.add-error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Already in watchlist styling */
+.search-result.in-watchlist {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.search-result.in-watchlist:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.search-result .in-list-label {
+  color: #4ade80;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.search-result .add.added {
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+  font-size: 1.25rem;
+}
