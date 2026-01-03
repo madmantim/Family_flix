@@ -76,11 +76,8 @@ export const getWatchStats = (memberId?: number) =>
 export const getMemberWatched = (memberId: number) =>
   api.get<MemberWatched[]>(`/watched/${memberId}`).then(r => r.data);
 
-export const markMovieWatched = (movieId: number, memberIds: number[], wouldRewatch = false) =>
-  api.post('/watched/', { movie_id: movieId, member_ids: memberIds, would_rewatch: wouldRewatch }).then(r => r.data);
-
-export const updateWouldRewatch = (memberId: number, movieId: number, wouldRewatch: boolean) =>
-  api.patch(`/watched/${memberId}/${movieId}`, { would_rewatch: wouldRewatch }).then(r => r.data);
+export const markMovieWatched = (movieId: number, memberIds: number[]) =>
+  api.post('/watched/', { movie_id: movieId, member_ids: memberIds }).then(r => r.data);
 
 export const removeWatched = (memberId: number, movieId: number) =>
   api.delete(`/watched/${memberId}/${movieId}`);
