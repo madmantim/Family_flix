@@ -158,6 +158,11 @@ export function Watchlist() {
     return watchlist?.filter((entry) => yesMovieIds.has(entry.movie.id)) ?? [];
   }, [watchlist, yesMovieIds]);
 
+  // Computed value for whether selected entry is watched (avoids IIFE in JSX)
+  const selectedEntryIsWatched = selectedEntry
+    ? (memberWatchedList?.some(w => w.movie.id === selectedEntry.movie.id) ?? false)
+    : false;
+
   return (
     <div className="watchlist-page">
       <header>
@@ -372,30 +377,27 @@ export function Watchlist() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {selectedEntry && (() => {
-          const isWatched = memberWatchedList?.some(w => w.movie.id === selectedEntry.movie.id) ?? false;
-          return (
-            <MovieDetailCard
-              entry={selectedEntry}
-              watched={isWatched}
-              currentSwipe={memberSwipes?.find(s => s.movie_id === selectedEntry.movie.id)?.direction}
-              isPending={swipeMutation.isPending || removeMutation.isPending || watchedMutation.isPending || unwatchMutation.isPending}
-              onClose={() => setSelectedEntry(null)}
-              onSwipe={(direction) => swipeMutation.mutate({ movieId: selectedEntry.movie.id, direction })}
-              onRemove={() => {
-                removeMutation.mutate(selectedEntry.id);
-                setSelectedEntry(null);
-              }}
-              onWatchedToggle={() => {
-                if (isWatched) {
-                  unwatchMutation.mutate(selectedEntry.movie.id);
-                } else {
-                  watchedMutation.mutate(selectedEntry.movie.id);
-                }
-              }}
-            />
-          );
-        })()}
+        {selectedEntry && (
+          <MovieDetailCard
+            entry={selectedEntry}
+            watched={selectedEntryIsWatched}
+            currentSwipe={memberSwipes?.find(s => s.movie_id === selectedEntry.movie.id)?.direction}
+            isPending={swipeMutation.isPending || removeMutation.isPending || watchedMutation.isPending || unwatchMutation.isPending}
+            onClose={() => setSelectedEntry(null)}
+            onSwipe={(direction) => swipeMutation.mutate({ movieId: selectedEntry.movie.id, direction })}
+            onRemove={() => {
+              removeMutation.mutate(selectedEntry.id);
+              setSelectedEntry(null);
+            }}
+            onWatchedToggle={() => {
+              if (selectedEntryIsWatched) {
+                unwatchMutation.mutate(selectedEntry.movie.id);
+              } else {
+                watchedMutation.mutate(selectedEntry.movie.id);
+              }
+            }}
+          />
+        )}
       </AnimatePresence>
 
       <BottomNav />

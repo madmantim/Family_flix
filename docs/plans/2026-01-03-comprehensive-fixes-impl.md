@@ -434,7 +434,7 @@ cd /Users/tim/Claude/Movie_picker/frontend && npm run lint && npm run build
 
 ---
 
-### [ ] P3-5: Replace IIFE pattern in Watchlist JSX
+### [x] P3-5: Replace IIFE pattern in Watchlist JSX
 
 **File:** `frontend/src/pages/Watchlist.tsx`
 **Lines:** ~362-385
