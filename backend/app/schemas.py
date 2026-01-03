@@ -141,11 +141,6 @@ class TMDBSearchResponse(BaseModel):
 class MemberWatchedCreate(BaseModel):
     member_id: int
     movie_id: int
-    would_rewatch: bool = False
-
-
-class MemberWatchedUpdate(BaseModel):
-    would_rewatch: bool
 
 
 class MemberWatchedResponse(BaseModel):
@@ -155,7 +150,6 @@ class MemberWatchedResponse(BaseModel):
     member_id: int
     movie_id: int
     watched_at: datetime
-    would_rewatch: bool
 
 
 class MemberWatchedWithMovie(BaseModel):
@@ -164,10 +158,8 @@ class MemberWatchedWithMovie(BaseModel):
     id: int
     movie: MovieResponse
     watched_at: datetime
-    would_rewatch: bool
 
 
 class MarkWatchedRequest(BaseModel):
     movie_id: int
     member_ids: List[int]
-    would_rewatch: bool = False
