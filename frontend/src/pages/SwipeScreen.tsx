@@ -196,6 +196,8 @@ export function SwipeScreen() {
 
   // Auto-refetch when we're running low on movies but more exist on server
   useEffect(() => {
+    let isMounted = true;
+
     if (
       availableMovies.length <= REFETCH_THRESHOLD &&
       trueRemaining > availableMovies.length &&
@@ -203,9 +205,15 @@ export function SwipeScreen() {
     ) {
       // Refetch fresh list from server, then clear swiped IDs on success
       refetch().then(() => {
-        setSwipedIds(new Set());
+        if (isMounted) {
+          setSwipedIds(new Set());
+        }
       });
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [availableMovies.length, trueRemaining, isFetching, refetch]);
 
   const swipeMutation = useMutation({

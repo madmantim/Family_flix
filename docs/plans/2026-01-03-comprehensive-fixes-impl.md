@@ -315,7 +315,7 @@ cd /Users/tim/Claude/Movie_picker/frontend && npm run lint && npm run build
 
 ---
 
-### [ ] P3-2: Add cleanup to useEffect with async operations
+### [x] P3-2: Add cleanup to useEffect with async operations
 
 **File:** `frontend/src/pages/SwipeScreen.tsx`
 **Lines:** ~198-209
