@@ -8,7 +8,6 @@ import {
   addToWatchlist,
   removeFromWatchlist,
   getMemberWatched,
-  updateWouldRewatch,
   recordSwipe,
   toggleWatched,
   removeWatched,
@@ -18,6 +17,7 @@ import {
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { MovieDetailCard } from '../components/MovieDetailCard';
 import { HelpTooltip } from '../components/HelpTooltip';
+import { BottomNav } from '../components/BottomNav';
 import type { TMDBSearchResult, WatchlistEntry, SwipeDirection } from '../types';
 import './Watchlist.css';
 
@@ -36,7 +36,6 @@ export function Watchlist() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TMDBSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [showWatched, setShowWatched] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<WatchlistEntry | null>(null);
   const [showDiscover, setShowDiscover] = useState(false);
   const [discoverTab, setDiscoverTab] = useState<'popular' | 'highly-rated'>('popular');
@@ -62,14 +61,6 @@ export function Watchlist() {
     queryKey: ['discover', discoverTab],
     queryFn: () => discoverMovies(discoverTab),
     enabled: showDiscover,
-  });
-
-  const updateRewatchMutation = useMutation({
-    mutationFn: ({ movieId, wouldRewatch }: { movieId: number; wouldRewatch: boolean }) =>
-      updateWouldRewatch(memberId!, movieId, wouldRewatch),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['memberWatched', memberId] });
-    },
   });
 
   const addMutation = useMutation({
@@ -136,65 +127,29 @@ export function Watchlist() {
   return (
     <div className="watchlist-page">
       <header>
-        <h1>{showWatched ? 'Watched' : 'Watchlist'}</h1>
+        <h1>Watchlist</h1>
         <div className="header-controls">
           <HelpTooltip items={WATCHLIST_HELP_ITEMS} />
-          <label className="show-watched-toggle">
-            <span>Show Watched</span>
-            <input
-              type="checkbox"
-              checked={showWatched}
-              onChange={(e) => setShowWatched(e.target.checked)}
-            />
-          </label>
-          {!showWatched && (
-            <>
-              <button className="discover-btn" onClick={() => setShowDiscover(true)}>
-                Discover
-              </button>
-              <button className="add-btn" onClick={() => setShowSearch(true)}>
-                + Add
-              </button>
-            </>
-          )}
+          <button
+            className="icon-btn discover-btn"
+            onClick={() => setShowDiscover(true)}
+            aria-label="Discover trending movies"
+            title="Discover"
+          >
+            🔥
+          </button>
+          <button
+            className="icon-btn add-btn"
+            onClick={() => setShowSearch(true)}
+            aria-label="Add movie"
+            title="Add movie"
+          >
+            +
+          </button>
         </div>
       </header>
 
-      {showWatched ? (
-        <div className="watched-list">
-          {memberWatchedList?.length === 0 ? (
-            <div className="empty">
-              <p>No watched movies yet</p>
-            </div>
-          ) : (
-            memberWatchedList?.map((item) => (
-              <div key={item.id} className="watched-item">
-                <div
-                  className="poster"
-                  style={{
-                    backgroundImage: item.movie.poster_url
-                      ? `url(${item.movie.poster_url})`
-                      : undefined,
-                  }}
-                />
-                <div className="watched-info">
-                  <h3>{item.movie.title}</h3>
-                  <p>Watched {new Date(item.watched_at).toLocaleDateString()}</p>
-                </div>
-                <button
-                  className={`rewatch-btn ${item.would_rewatch ? 'active' : ''}`}
-                  onClick={() => updateRewatchMutation.mutate({
-                    movieId: item.movie.id,
-                    wouldRewatch: !item.would_rewatch
-                  })}
-                >
-                  {item.would_rewatch ? '♥' : '♡'}
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      ) : isLoading ? (
+      {isLoading ? (
         <div className="loading">Loading...</div>
       ) : watchlist?.length === 0 ? (
         <div className="empty">
@@ -203,7 +158,13 @@ export function Watchlist() {
         </div>
       ) : (
         <div className="movie-grid">
-          {watchlist?.map((entry) => (
+          {watchlist
+            ?.filter((entry) => {
+              // Show movies where the current member has voted YES
+              const memberSwipe = memberSwipes?.find(s => s.movie_id === entry.movie.id);
+              return memberSwipe?.direction === 'yes';
+            })
+            .map((entry) => (
             <motion.div
               key={entry.id}
               className="movie-item"
@@ -409,12 +370,7 @@ export function Watchlist() {
         })()}
       </AnimatePresence>
 
-      <nav className="bottom-nav">
-        <button onClick={() => navigate('/swipe')}>Swipe</button>
-        <button onClick={() => navigate('/movie-night')}>Movie Night</button>
-        <button className="active">Watchlist</button>
-        <button onClick={() => navigate('/history')}>History</button>
-      </nav>
+      <BottomNav />
     </div>
   );
 }
