@@ -13,6 +13,7 @@ services:
       - DATABASE_URL=sqlite:///./data/family_flix.db
     volumes:
       - ./data:/app/data
+      - ./backend/static/avatars:/app/static/avatars
     restart: unless-stopped
 
   frontend:

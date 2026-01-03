@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import type { WatchlistEntry, SwipeDirection } from '../types';
 import './MovieDetailCard.css';
 
+const TMDB_BASE_URL = 'https://www.themoviedb.org/movie/';
+
 interface MovieDetailCardProps {
   entry: WatchlistEntry;
   watched: boolean;
@@ -35,6 +37,18 @@ export function MovieDetailCard({
     }
   };
 
+  const openTrailer = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (movie.trailer_url) {
+      window.open(movie.trailer_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const openTmdb = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(`${TMDB_BASE_URL}${movie.tmdb_id}`, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <motion.div
       className="movie-detail-overlay"
@@ -51,6 +65,10 @@ export function MovieDetailCard({
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
       >
+        <button className="close-btn" onClick={onClose}>
+          ✕
+        </button>
+
         <div
           className="poster"
           style={{
@@ -58,26 +76,17 @@ export function MovieDetailCard({
           }}
         >
           {!movie.poster_url && <div className="no-poster">No Poster</div>}
-
-          <button className="close-btn" onClick={onClose}>
-            ✕
-          </button>
-
-          <button
-            className={`watched-toggle ${watched ? 'active' : ''}`}
-            onClick={onWatchedToggle}
-            disabled={isPending}
-          >
-            👁
-          </button>
         </div>
 
         <div className="info">
-          <h2>{movie.title}</h2>
-          <div className="meta">
-            {movie.year && <span>{movie.year}</span>}
-            {movie.runtime && <span>{movie.runtime} min</span>}
-            {movie.vote_average && <span>TMDB {(movie.vote_average / 10).toFixed(1)}</span>}
+          <h2>
+            {movie.title}
+            {movie.year && <span className="year"> ({movie.year})</span>}
+          </h2>
+
+          <div className="meta-row">
+            {movie.runtime && <span className="meta-item">{movie.runtime} min</span>}
+            {movie.vote_average && <span className="meta-item">TMDB {(movie.vote_average / 10).toFixed(1)}</span>}
             {movie.rt_critic_score && (
               movie.rt_url ? (
                 <a
@@ -93,18 +102,8 @@ export function MovieDetailCard({
                 <span className="rt-score">🍅 {movie.rt_critic_score}%</span>
               )
             )}
-            {movie.trailer_url && (
-              <a
-                href={movie.trailer_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="trailer-link"
-              >
-                ▶ Trailer
-              </a>
-            )}
           </div>
+
           {movie.genres && (
             <div className="genres">
               {parseGenres(movie.genres).slice(0, 3).map((g) => (
@@ -112,12 +111,24 @@ export function MovieDetailCard({
               ))}
             </div>
           )}
+
           <p className="overview">{movie.overview}</p>
+
+          <div className="action-buttons">
+            {movie.trailer_url && (
+              <button className="btn-secondary" onClick={openTrailer}>
+                ▶ Trailer
+              </button>
+            )}
+            <button className="btn-secondary" onClick={openTmdb}>
+              More
+            </button>
+          </div>
         </div>
 
-        <div className="action-row">
+        <div className="swipe-actions">
           <motion.button
-            className={`action-btn no ${currentSwipe === 'no' ? 'active' : ''}`}
+            className={`swipe-btn no ${currentSwipe === 'no' ? 'active' : ''}`}
             onClick={() => onSwipe('no')}
             disabled={isPending}
             whileHover={{ scale: 1.1 }}
@@ -125,8 +136,15 @@ export function MovieDetailCard({
           >
             ✕
           </motion.button>
+          <button
+            className={`swipe-btn seen ${watched ? 'active' : ''}`}
+            onClick={onWatchedToggle}
+            disabled={isPending}
+          >
+            👁
+          </button>
           <motion.button
-            className="action-btn remove"
+            className="swipe-btn remove"
             onClick={onRemove}
             disabled={isPending}
             whileHover={{ scale: 1.1 }}
@@ -135,7 +153,7 @@ export function MovieDetailCard({
             🗑
           </motion.button>
           <motion.button
-            className={`action-btn yes ${currentSwipe === 'yes' ? 'active' : ''}`}
+            className={`swipe-btn yes ${currentSwipe === 'yes' ? 'active' : ''}`}
             onClick={() => onSwipe('yes')}
             disabled={isPending}
             whileHover={{ scale: 1.1 }}

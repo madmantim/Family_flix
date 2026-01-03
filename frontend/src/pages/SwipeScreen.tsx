@@ -2,9 +2,10 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence, type PanInfo } from 'framer-motion';
-import { getSwipeQueue, recordSwipe, getMember } from '../api/client';
+import { getSwipeQueue, recordSwipe } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { HelpTooltip } from '../components/HelpTooltip';
+import { BottomNav } from '../components/BottomNav';
 import type { Movie, SwipeDirection } from '../types';
 import './SwipeScreen.css';
 
@@ -13,6 +14,8 @@ const SWIPE_HELP_ITEMS = [
   { icon: '♥', label: 'Watch / Rewatch' },
   { icon: '👁', label: 'Seen it' },
 ];
+
+const TMDB_BASE_URL = 'https://www.themoviedb.org/movie/';
 
 // Fetch a larger batch to reduce API calls
 const BATCH_SIZE = 100;
@@ -60,6 +63,18 @@ function MovieCard({
     }
   };
 
+  const openTrailer = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (movie.trailer_url) {
+      window.open(movie.trailer_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const openTmdb = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(`${TMDB_BASE_URL}${movie.tmdb_id}`, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <motion.div
       className={`movie-card ${isTop ? 'top' : ''}`}
@@ -87,24 +102,17 @@ function MovieCard({
         <motion.div className="swipe-indicator no" style={{ opacity: noOpacity }}>
           NOPE
         </motion.div>
-
-        <button
-          className={`watched-toggle ${watched ? 'active' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onWatchedToggle();
-          }}
-        >
-          👁
-        </button>
       </div>
 
       <div className="info">
-        <h2>{movie.title}</h2>
-        <div className="meta">
-          {movie.year && <span>{movie.year}</span>}
-          {movie.runtime && <span>{movie.runtime} min</span>}
-          {movie.vote_average && <span>TMDB {(movie.vote_average / 10).toFixed(1)}</span>}
+        <h2>
+          {movie.title}
+          {movie.year && <span className="year"> ({movie.year})</span>}
+        </h2>
+
+        <div className="meta-row">
+          {movie.runtime && <span className="meta-item">{movie.runtime} min</span>}
+          {movie.vote_average && <span className="meta-item">TMDB {(movie.vote_average / 10).toFixed(1)}</span>}
           {movie.rt_critic_score && (
             movie.rt_url ? (
               <a
@@ -120,18 +128,8 @@ function MovieCard({
               <span className="rt-score">🍅 {movie.rt_critic_score}%</span>
             )
           )}
-          {movie.trailer_url && (
-            <a
-              href={movie.trailer_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="trailer-link"
-            >
-              ▶ Trailer
-            </a>
-          )}
         </div>
+
         {movie.genres && (
           <div className="genres">
             {parseGenres(movie.genres).slice(0, 3).map((g) => (
@@ -139,7 +137,44 @@ function MovieCard({
             ))}
           </div>
         )}
+
         <p className="overview">{movie.overview}</p>
+
+        <div className="action-buttons">
+          {movie.trailer_url && (
+            <button className="btn-secondary" onClick={openTrailer}>
+              ▶ Trailer
+            </button>
+          )}
+          <button className="btn-secondary" onClick={openTmdb}>
+            More
+          </button>
+        </div>
+      </div>
+
+      <div className="swipe-actions">
+        <motion.button
+          className="swipe-btn no"
+          onClick={(e) => { e.stopPropagation(); onSwipe('no'); }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          ✕
+        </motion.button>
+        <button
+          className={`swipe-btn seen ${watched ? 'active' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onWatchedToggle(); }}
+        >
+          👁
+        </button>
+        <motion.button
+          className="swipe-btn yes"
+          onClick={(e) => { e.stopPropagation(); onSwipe('yes'); }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          ♥
+        </motion.button>
       </div>
     </motion.div>
   );
@@ -147,16 +182,10 @@ function MovieCard({
 
 export function SwipeScreen() {
   const navigate = useNavigate();
-  const { memberId, clearMember } = useCurrentMember();
+  const { memberId } = useCurrentMember();
   // Track swiped movie IDs locally to filter them out without race conditions
   const [swipedIds, setSwipedIds] = useState<Set<number>>(new Set());
   const [watched, setWatched] = useState(false);
-
-  const { data: member } = useQuery({
-    queryKey: ['member', memberId],
-    queryFn: () => getMember(memberId!),
-    enabled: !!memberId,
-  });
 
   const { data: queue, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['swipeQueue', memberId],
@@ -170,7 +199,7 @@ export function SwipeScreen() {
   const availableMovies = useMemo(() => {
     if (!queue?.movies) return [];
     return queue.movies.filter(movie => !swipedIds.has(movie.id));
-  }, [queue?.movies, swipedIds]);
+  }, [queue, swipedIds]);
 
   // Calculate the true remaining count
   const trueRemaining = (queue?.total_unswiped || 0) - swipedIds.size;
@@ -182,9 +211,10 @@ export function SwipeScreen() {
       trueRemaining > availableMovies.length &&
       !isFetching
     ) {
-      // Clear swiped IDs since server will return fresh list without them
-      setSwipedIds(new Set());
-      refetch();
+      // Refetch fresh list from server, then clear swiped IDs on success
+      refetch().then(() => {
+        setSwipedIds(new Set());
+      });
     }
   }, [availableMovies.length, trueRemaining, isFetching, refetch]);
 
@@ -212,11 +242,6 @@ export function SwipeScreen() {
     [availableMovies, swipeMutation, watched]
   );
 
-  const handleSwitchUser = () => {
-    clearMember();
-    navigate('/');
-  };
-
   if (!memberId) {
     navigate('/');
     return null;
@@ -226,21 +251,34 @@ export function SwipeScreen() {
     return <div className="swipe-screen loading">Loading movies...</div>;
   }
 
-  // Get current and next movie from the filtered available list
+  // Get current movie from the filtered available list
   const currentMovie = availableMovies[0];
-  const nextMovie = availableMovies[1];
   const showLoading = isFetching && availableMovies.length === 0 && trueRemaining > 0;
+
+  // Calculate current position for dots (show up to 10 dots)
+  const currentPosition = swipedIds.size;
+  const totalInBatch = Math.min(availableMovies.length + swipedIds.size, 10);
 
   return (
     <div className="swipe-screen">
       <header>
-        <button className="back" onClick={handleSwitchUser}>
-          Switch User
-        </button>
-        <span className="member-name">{member?.name}</span>
-        <HelpTooltip items={SWIPE_HELP_ITEMS} />
-        <span className="count">{trueRemaining} left</span>
+        <h1>Movie Match</h1>
+        <div className="header-controls">
+          <HelpTooltip items={SWIPE_HELP_ITEMS} />
+          <span className="count">{currentPosition + 1} of {trueRemaining + currentPosition}</span>
+        </div>
       </header>
+
+      {currentMovie && trueRemaining > 0 && (
+        <div className="progress-dots">
+          {Array.from({ length: totalInBatch }).map((_, i) => (
+            <span
+              key={i}
+              className={`dot ${i === currentPosition ? 'active' : ''} ${i < currentPosition ? 'done' : ''}`}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="card-stack">
         <AnimatePresence mode="popLayout">
@@ -267,60 +305,20 @@ export function SwipeScreen() {
                 Add Movies
               </button>
             </motion.div>
-          ) : (
-            <>
-              {nextMovie && (
-                <MovieCard
-                  key={`next-${nextMovie.id}`}
-                  movie={nextMovie}
-                  onSwipe={() => {}}
-                  isTop={false}
-                  watched={false}
-                  onWatchedToggle={() => {}}
-                />
-              )}
-              {currentMovie && (
-                <MovieCard
-                  key={`current-${currentMovie.id}`}
-                  movie={currentMovie}
-                  onSwipe={handleSwipe}
-                  isTop={true}
-                  watched={watched}
-                  onWatchedToggle={() => setWatched((w) => !w)}
-                />
-              )}
-            </>
-          )}
+          ) : currentMovie ? (
+            <MovieCard
+              key={`current-${currentMovie.id}`}
+              movie={currentMovie}
+              onSwipe={handleSwipe}
+              isTop={true}
+              watched={watched}
+              onWatchedToggle={() => setWatched((w) => !w)}
+            />
+          ) : null}
         </AnimatePresence>
       </div>
 
-      {currentMovie && (
-        <div className="button-row">
-          <motion.button
-            className="swipe-btn no"
-            onClick={() => handleSwipe('no')}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            ✕
-          </motion.button>
-          <motion.button
-            className="swipe-btn yes"
-            onClick={() => handleSwipe('yes')}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            ♥
-          </motion.button>
-        </div>
-      )}
-
-      <nav className="bottom-nav">
-        <button className="active">Swipe</button>
-        <button onClick={() => navigate('/movie-night')}>Movie Night</button>
-        <button onClick={() => navigate('/watchlist')}>Watchlist</button>
-        <button onClick={() => navigate('/history')}>History</button>
-      </nav>
+      <BottomNav />
     </div>
   );
 }

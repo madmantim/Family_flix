@@ -488,8 +488,47 @@
 }
 
 .browse-info h2 .year {
-  color: #888;
+  color: var(--color-text-muted);
   font-weight: normal;
+}
+
+/* Meta row */
+.browse-card .meta-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.browse-card .meta-item {
+  color: var(--color-text-secondary);
+}
+
+.browse-card .rt-score {
+  color: var(--color-rating-critic);
+  background: var(--color-rating-critic-bg);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Genres */
+.browse-card .genres {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.browse-card .genre {
+  padding: 0.25rem 0.75rem;
+  background: var(--color-brand-subtle);
+  color: var(--color-brand-light);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 /* Voter stack */
@@ -547,29 +586,6 @@
   font-weight: 600;
 }
 
-.rt-scores {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 0.75rem;
-}
-
-.rt-score {
-  font-size: 0.95rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.rt-score.critic {
-  color: var(--color-rating-critic);
-  background: var(--color-rating-critic-bg);
-}
-
-.rt-score.audience {
-  color: #f5c518;
-}
-
 .synopsis {
   color: #aaa;
   font-size: 0.9rem;
@@ -587,22 +603,28 @@
   flex-direction: column;
   gap: 0.75rem;
   width: 100%;
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
 }
 
-.trailer-btn {
-  padding: 0.875rem;
+.action-buttons-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.browse-card .btn-secondary {
+  padding: 0.625rem 1.25rem;
   background: transparent;
   color: #fff;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  font-size: 1rem;
+  border-radius: var(--card-radius-inner);
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
-.trailer-btn:hover {
+.browse-card .btn-secondary:hover {
   border-color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.05);
 }

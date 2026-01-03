@@ -96,17 +96,27 @@ async def add_to_watchlist(
         # Determine content rating from release_dates
         content_rating = ContentRating.ALL_AGES
         release_dates = tmdb_data.get("release_dates", {}).get("results", [])
+        found_rating = False
         for country in release_dates:
+            if found_rating:
+                break
             if country.get("iso_3166_1") in ["AU", "US"]:
                 for release in country.get("release_dates", []):
-                    cert = release.get("certification", "")
+                    cert = release.get("certification", "").strip()
+                    if not cert:
+                        continue  # Skip empty certifications
                     if cert in ["R18+", "NC-17", "X"]:
                         content_rating = ContentRating.ADULT
-                    elif cert in ["MA15+", "R", "MA"]:
+                        found_rating = True
+                        break
+                    elif cert in ["MA15+", "MA 15+", "R", "MA"]:
                         content_rating = ContentRating.MATURE
-                    elif cert in ["M", "PG-13"]:
+                        found_rating = True
+                        break
+                    elif cert in ["M", "PG-13", "PG"]:
                         content_rating = ContentRating.TEEN
-                    break
+                        found_rating = True
+                        break
 
         # Extract genres
         genres = json.dumps([g["name"] for g in tmdb_data.get("genres", [])])

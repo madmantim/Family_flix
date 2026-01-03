@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app/ ./app/
 
+# Copy static files (avatars, etc.)
+COPY static/ ./static/
+
 # Create directories for persistent data
 RUN mkdir -p /app/data /app/static/avatars
 

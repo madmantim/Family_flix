@@ -10,35 +10,19 @@
 }
 
 .movie-detail-card {
+  position: relative;
   width: 100%;
   max-width: 400px;
   max-height: 95vh;
-  background: #1a1a2e;
-  border-radius: 20px 20px 0 0;
+  background: var(--card-bg);
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+  padding: var(--card-padding);
+  padding-top: 3rem;
   overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-}
-
-.movie-detail-card .poster {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 2/3;
-  max-height: 50vh;
-  background-size: cover;
-  background-position: center top;
-  background-color: #2a2a3e;
-  flex-shrink: 0;
-}
-
-.movie-detail-card .no-poster {
-  position: absolute;
-  inset: 0;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  color: #666;
-  font-size: 1.2rem;
 }
 
 .movie-detail-card .close-btn {
@@ -49,168 +33,232 @@
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
   font-size: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 5;
+  z-index: 10;
+  transition: background 0.2s ease;
 }
 
-.movie-detail-card .watched-toggle {
+.movie-detail-card .close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Poster - fixed size centered within card (like MovieNight) */
+.movie-detail-card .poster {
+  position: relative;
+  width: 180px;
+  height: 270px;
+  background-size: cover;
+  background-position: center top;
+  background-color: #2a2a3e;
+  flex-shrink: 0;
+  border-radius: var(--poster-radius);
+  box-shadow: var(--poster-shadow);
+}
+
+.movie-detail-card .no-poster {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  background: rgba(0, 0, 0, 0.5);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1.1rem;
-  cursor: pointer;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 5;
-  transition: all 0.2s ease;
-}
-
-.movie-detail-card .watched-toggle:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.movie-detail-card .watched-toggle.active {
-  background: rgba(229, 9, 20, 0.9);
-  border-color: #e50914;
-  color: #fff;
+  color: #666;
+  font-size: 1rem;
 }
 
 .movie-detail-card .info {
-  padding: 1rem;
-  flex-shrink: 1;
-  overflow: hidden;
+  margin-top: 1.25rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .movie-detail-card h2 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   color: #fff;
-  line-height: 1.2;
+  line-height: 1.3;
+  text-align: center;
 }
 
-.movie-detail-card .meta {
+.movie-detail-card h2 .year {
+  color: var(--color-text-muted);
+  font-weight: normal;
+}
+
+.movie-detail-card .meta-row {
   display: flex;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 0.5rem;
-  color: #888;
-  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
 }
 
-.movie-detail-card .meta .rt-score {
-  color: #fa320a;
+.movie-detail-card .meta-item {
+  color: var(--color-text-secondary);
+}
+
+.movie-detail-card .rt-score {
+  color: var(--color-rating-critic);
+  background: var(--color-rating-critic-bg);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
   text-decoration: none;
 }
 
-.movie-detail-card .meta a.rt-score:hover {
-  text-decoration: underline;
-}
-
-.movie-detail-card .meta .trailer-link {
-  color: #ff0000;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.movie-detail-card .meta .trailer-link:hover {
+.movie-detail-card a.rt-score:hover {
   text-decoration: underline;
 }
 
 .movie-detail-card .genres {
   display: flex;
-  gap: 0.4rem;
-  margin-top: 0.5rem;
+  justify-content: center;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .movie-detail-card .genre {
-  padding: 0.2rem 0.6rem;
-  background: rgba(229, 9, 20, 0.2);
-  color: #e50914;
+  padding: 0.25rem 0.75rem;
+  background: var(--color-brand-subtle);
+  color: var(--color-brand-light);
   border-radius: 20px;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
 .movie-detail-card .overview {
-  margin-top: 0.5rem;
-  color: #aaa;
+  margin: 0;
+  color: var(--color-text-secondary);
   font-size: 0.85rem;
-  line-height: 1.4;
+  line-height: 1.5;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-align: center;
 }
 
-.action-row {
-  flex-shrink: 0;
+/* Action buttons - Trailer / More */
+.movie-detail-card .action-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.movie-detail-card .btn-secondary {
+  padding: 0.625rem 1.25rem;
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--card-radius-inner);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.movie-detail-card .btn-secondary:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Swipe action buttons row */
+.movie-detail-card .swipe-actions {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 2rem;
-  padding: 1rem;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 1rem);
-  background: #1a1a2e;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0));
+  flex-shrink: 0;
 }
 
-.action-btn {
-  width: 56px;
-  height: 56px;
+.movie-detail-card .swipe-btn {
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: none;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.action-btn:disabled {
+.movie-detail-card .swipe-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.action-btn.no {
-  background: rgba(248, 113, 113, 0.2);
-  color: #f87171;
+.movie-detail-card .swipe-btn.no {
+  background: var(--color-destructive-subtle);
+  color: var(--color-destructive);
 }
 
-.action-btn.no.active {
-  background: #f87171;
+.movie-detail-card .swipe-btn.no:hover:not(:disabled) {
+  background: var(--color-destructive);
   color: #fff;
-  box-shadow: 0 0 12px rgba(248, 113, 113, 0.5);
 }
 
-.action-btn.yes {
-  background: rgba(74, 222, 128, 0.2);
-  color: #4ade80;
-}
-
-.action-btn.yes.active {
-  background: #4ade80;
+.movie-detail-card .swipe-btn.no.active {
+  background: var(--color-destructive);
   color: #fff;
-  box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 12px var(--color-destructive-muted);
 }
 
-.action-btn.remove {
-  width: 48px;
-  height: 48px;
+.movie-detail-card .swipe-btn.yes {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+}
+
+.movie-detail-card .swipe-btn.yes:hover:not(:disabled) {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.movie-detail-card .swipe-btn.yes.active {
+  background: var(--color-success);
+  color: #fff;
+  box-shadow: 0 0 12px var(--color-success-muted);
+}
+
+.movie-detail-card .swipe-btn.seen {
+  width: 44px;
+  height: 44px;
   background: rgba(255, 255, 255, 0.1);
-  color: #888;
-  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+}
+
+.movie-detail-card .swipe-btn.seen.active {
+  background: var(--color-selected);
+  color: #fff;
+  box-shadow: 0 0 12px var(--color-selected-border);
+}
+
+.movie-detail-card .swipe-btn.seen:hover:not(.active):not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.movie-detail-card .swipe-btn.remove {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+}
+
+.movie-detail-card .swipe-btn.remove:hover:not(:disabled) {
+  background: var(--color-destructive-subtle);
+  color: var(--color-destructive);
 }

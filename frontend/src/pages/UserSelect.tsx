@@ -145,7 +145,7 @@ export function UserSelect() {
               {uploadingId === member.id ? (
                 <div className="avatar-loading">...</div>
               ) : member.avatar_url ? (
-                <img src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000'}${member.avatar_url}`} alt={member.name} />
+                <img src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${member.avatar_url}`} alt={member.name} />
               ) : (
                 getInitials(member.name)
               )}

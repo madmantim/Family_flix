@@ -1,5 +1,60 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
 
+/* ===========================================
+   COLOR SEMANTIC SYSTEM
+   =========================================== */
+:root {
+  /* Brand Colors - Cinema Gold palette */
+  --color-brand: #d4a053;
+  --color-brand-light: #e4b870;
+  --color-brand-dark: #b8893d;
+  --color-brand-subtle: rgba(212, 160, 83, 0.15);
+  --color-brand-muted: rgba(212, 160, 83, 0.25);
+
+  /* Action Colors - Semantic meanings */
+  --color-success: #4ade80;
+  --color-success-subtle: rgba(74, 222, 128, 0.2);
+  --color-success-muted: rgba(74, 222, 128, 0.5);
+
+  --color-destructive: #f87171;
+  --color-destructive-subtle: rgba(248, 113, 113, 0.2);
+  --color-destructive-muted: rgba(248, 113, 113, 0.5);
+
+  /* Selection States - Distinct from success/destructive */
+  --color-selected: #38bdf8;
+  --color-selected-subtle: rgba(56, 189, 248, 0.15);
+  --color-selected-border: rgba(56, 189, 248, 0.6);
+
+  /* Rating Colors - High contrast on dark */
+  --color-rating-critic: #fff;
+  --color-rating-critic-bg: rgba(250, 50, 10, 0.35);
+  --color-rating-audience: #f5c518;
+  --color-rating-partial: #fbbf24;
+
+  /* Trailer/Video accent */
+  --color-video: #ff4757;
+
+  /* Neutral palette */
+  --color-bg-primary: #0a0a0a;
+  --color-bg-secondary: #1a1a2e;
+  --color-bg-elevated: rgba(255, 255, 255, 0.05);
+  --color-bg-hover: rgba(255, 255, 255, 0.1);
+  --color-text-primary: #fff;
+  --color-text-secondary: #aaa;
+  --color-text-muted: #888;
+  --color-text-disabled: #666;
+  --color-border: rgba(255, 255, 255, 0.1);
+
+  /* Movie Card Design System */
+  --card-radius: 20px;
+  --card-radius-inner: 12px;
+  --card-padding: 1.5rem;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-max-width: 360px;
+  --poster-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --poster-radius: 12px;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -54,7 +109,7 @@ button,
 /* Focus styles for accessibility */
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid #e50914;
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
