@@ -52,7 +52,6 @@ export interface MemberWatched {
   id: number;
   movie: Movie;
   watched_at: string;
-  would_rewatch: boolean;
 }
 
 export interface MatchedMovie {
