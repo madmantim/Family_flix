@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -124,6 +124,22 @@ export function Watchlist() {
     if (e.key === 'Enter') handleSearch();
   };
 
+  // Memoized set of movie IDs the member has voted YES on (O(1) lookups)
+  const yesMovieIds = useMemo(() => {
+    const ids = new Set<number>();
+    memberSwipes?.forEach((s) => {
+      if (s.direction === 'yes') {
+        ids.add(s.movie_id);
+      }
+    });
+    return ids;
+  }, [memberSwipes]);
+
+  // Memoized filtered watchlist (only movies the member has voted YES on)
+  const likedMovies = useMemo(() => {
+    return watchlist?.filter((entry) => yesMovieIds.has(entry.movie.id)) ?? [];
+  }, [watchlist, yesMovieIds]);
+
   if (!memberId) {
     navigate('/');
     return null;
@@ -163,13 +179,7 @@ export function Watchlist() {
         </div>
       ) : (
         <div className="movie-grid">
-          {watchlist
-            ?.filter((entry) => {
-              // Show movies where the current member has voted YES
-              const memberSwipe = memberSwipes?.find(s => s.movie_id === entry.movie.id);
-              return memberSwipe?.direction === 'yes';
-            })
-            .map((entry) => (
+          {likedMovies.map((entry) => (
             <motion.div
               key={entry.id}
               className="movie-item"

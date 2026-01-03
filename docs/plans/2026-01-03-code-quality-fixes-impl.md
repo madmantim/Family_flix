@@ -80,7 +80,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
 
 ### Frontend Medium Priority
 
-- [ ] **F2: Add memoization to Watchlist filtering**
+- [x] **F2: Add memoization to Watchlist filtering**
   - File: `frontend/src/pages/Watchlist.tsx`
   - Wrap liked movies filter in `useMemo`
   - Use Set for O(1) lookups instead of O(n) find
