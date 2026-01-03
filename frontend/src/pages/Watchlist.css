@@ -15,7 +15,8 @@
 .watchlist-page header h1 {
   color: #fff;
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 1.75rem;
+  font-weight: 600;
 }
 
 .watchlist-page .header-controls {

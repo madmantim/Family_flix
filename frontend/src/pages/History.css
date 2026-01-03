@@ -5,6 +5,9 @@
 }
 
 .history-page header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 1rem;
   padding-top: calc(env(safe-area-inset-top, 0) + 1rem);
 }
@@ -12,7 +15,8 @@
 .history-page header h1 {
   color: #fff;
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 1.75rem;
+  font-weight: 600;
 }
 
 .stats-card {
