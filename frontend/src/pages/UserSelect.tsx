@@ -5,8 +5,15 @@ import { motion } from 'framer-motion';
 import { getMembers, createMember, uploadAvatar } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { getInitials, getColor, getAvatarUrl } from '../utils';
-import type { Member } from '../types';
+import type { Member, ContentRating } from '../types';
 import './UserSelect.css';
+
+const CONTENT_FILTER_OPTIONS: { value: ContentRating; label: string }[] = [
+  { value: 'adult', label: 'All' },
+  { value: 'mature', label: 'Mature (16+)' },
+  { value: 'teen', label: 'Teen (13+)' },
+  { value: 'all_ages', label: 'Kids' },
+];
 
 const LONG_PRESS_DELAY_MS = 500;
 
@@ -16,6 +23,7 @@ export function UserSelect() {
   const { selectMember } = useCurrentMember();
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newContentFilter, setNewContentFilter] = useState<ContentRating>('adult');
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -28,10 +36,12 @@ export function UserSelect() {
   });
 
   const addMutation = useMutation({
-    mutationFn: (name: string) => createMember({ name }),
+    mutationFn: (data: { name: string; content_filter: ContentRating }) =>
+      createMember({ name: data.name, content_filter: data.content_filter }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['members'] });
       setNewName('');
+      setNewContentFilter('adult');
       setShowAdd(false);
     },
   });
@@ -61,7 +71,7 @@ export function UserSelect() {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) {
-      addMutation.mutate(newName.trim());
+      addMutation.mutate({ name: newName.trim(), content_filter: newContentFilter });
     }
   };
 
@@ -190,6 +200,20 @@ export function UserSelect() {
               onChange={(e) => setNewName(e.target.value)}
               autoFocus
             />
+            <div className="form-field">
+              <label htmlFor="content-filter">Content Filter</label>
+              <select
+                id="content-filter"
+                value={newContentFilter}
+                onChange={(e) => setNewContentFilter(e.target.value as ContentRating)}
+              >
+                {CONTENT_FILTER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="buttons">
               <button type="button" onClick={() => setShowAdd(false)}>Cancel</button>
               <button type="submit" disabled={!newName.trim()}>Add</button>
