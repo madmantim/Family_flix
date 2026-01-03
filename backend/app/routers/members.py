@@ -55,6 +55,16 @@ def update_member(member_id: int, member: MemberUpdate, db: Session = Depends(ge
         raise HTTPException(status_code=404, detail="Member not found")
 
     update_data = member.model_dump(exclude_unset=True)
+
+    # Check name uniqueness if updating name
+    if "name" in update_data:
+        existing = db.query(Member).filter(
+            Member.name == update_data["name"],
+            Member.id != member_id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Name already taken")
+
     for field, value in update_data.items():
         setattr(db_member, field, value)
 

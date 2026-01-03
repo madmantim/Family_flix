@@ -113,7 +113,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ---
 
-### [ ] P1-4: Add uniqueness check on member name update
+### [x] P1-4: Add uniqueness check on member name update
 
 **File:** `backend/app/routers/members.py`
 **Lines:** ~50-63 (PATCH endpoint)

@@ -58,3 +58,19 @@ def test_delete_member(client):
     # Verify deleted
     get_resp = client.get(f"/api/members/{member_id}")
     assert get_resp.status_code == 404
+
+
+def test_update_member_duplicate_name(client):
+    """Test that renaming to an existing member's name fails"""
+    # Create two members
+    resp1 = client.post("/api/members/", json={"name": "Tim"})
+    resp2 = client.post("/api/members/", json={"name": "Sarah"})
+    member1_id = resp1.json()["id"]
+
+    # Try to rename member 1 to member 2's name
+    response = client.patch(
+        f"/api/members/{member1_id}",
+        json={"name": "Sarah"}
+    )
+    assert response.status_code == 400
+    assert "already taken" in response.json()["detail"].lower()
