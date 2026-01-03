@@ -90,11 +90,9 @@ class Swipe(Base):
     member = relationship("Member", back_populates="swipes")
     movie = relationship("Movie", back_populates="swipes")
 
-    class Config:
-        # Unique constraint: one swipe per member per movie
-        __table_args__ = (
-            {"sqlite_autoincrement": True},
-        )
+    __table_args__ = (
+        UniqueConstraint('member_id', 'movie_id', name='unique_member_movie_swipe'),
+    )
 
 
 class MemberWatched(Base):
