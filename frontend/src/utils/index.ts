@@ -40,7 +40,8 @@ export function getColor(index: number): string {
  */
 export function getAvatarUrl(avatarPath: string | null): string | null {
   if (!avatarPath) return null;
-  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
+  // In production, use relative URL (empty string). In dev, VITE_API_URL points to backend.
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
   return `${baseUrl}${avatarPath}`;
 }
 
