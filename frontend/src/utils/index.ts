@@ -56,3 +56,16 @@ export function parseGenres(genres: string | null): string[] {
     return [];
   }
 }
+
+/**
+ * Format content rating enum to display label
+ */
+export function formatContentRating(rating: string): string {
+  const labels: Record<string, string> = {
+    all_ages: 'G',
+    teen: '13+',
+    mature: '16+',
+    adult: '18+',
+  };
+  return labels[rating] || rating;
+}

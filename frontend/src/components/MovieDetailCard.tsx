@@ -1,7 +1,7 @@
 // frontend/src/components/MovieDetailCard.tsx
 import { motion } from 'framer-motion';
 import type { WatchlistEntry, SwipeDirection } from '../types';
-import { TMDB_BASE_URL, parseGenres } from '../utils';
+import { TMDB_BASE_URL, parseGenres, formatContentRating } from '../utils';
 import './MovieDetailCard.css';
 
 interface MovieDetailCardProps {
@@ -75,9 +75,10 @@ export function MovieDetailCard({
           </h2>
 
           <div className="meta-row">
+            {movie.content_rating && <span className="meta-item">{formatContentRating(movie.content_rating)}</span>}
             {movie.runtime && <span className="meta-item">{movie.runtime} min</span>}
             {movie.vote_average && <span className="meta-item">TMDB {(movie.vote_average / 10).toFixed(1)}</span>}
-            {movie.rt_critic_score && (
+            {movie.rt_audience_score && (
               movie.rt_url ? (
                 <a
                   href={movie.rt_url}
@@ -86,10 +87,10 @@ export function MovieDetailCard({
                   onClick={(e) => e.stopPropagation()}
                   className="rt-score"
                 >
-                  🍅 {movie.rt_critic_score}%
+                  🍿 {movie.rt_audience_score}%
                 </a>
               ) : (
-                <span className="rt-score">🍅 {movie.rt_critic_score}%</span>
+                <span className="rt-score">🍿 {movie.rt_audience_score}%</span>
               )
             )}
           </div>

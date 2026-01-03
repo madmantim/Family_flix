@@ -6,7 +6,7 @@ import { getSwipeQueue, recordSwipe } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { HelpTooltip } from '../components/HelpTooltip';
 import { BottomNav } from '../components/BottomNav';
-import { TMDB_BASE_URL, parseGenres } from '../utils';
+import { TMDB_BASE_URL, parseGenres, formatContentRating } from '../utils';
 import type { Movie, SwipeDirection } from '../types';
 import './SwipeScreen.css';
 
@@ -102,9 +102,10 @@ function MovieCard({
         </h2>
 
         <div className="meta-row">
+          {movie.content_rating && <span className="meta-item">{formatContentRating(movie.content_rating)}</span>}
           {movie.runtime && <span className="meta-item">{movie.runtime} min</span>}
           {movie.vote_average && <span className="meta-item">TMDB {(movie.vote_average / 10).toFixed(1)}</span>}
-          {movie.rt_critic_score && (
+          {movie.rt_audience_score && (
             movie.rt_url ? (
               <a
                 href={movie.rt_url}
@@ -113,10 +114,10 @@ function MovieCard({
                 onClick={(e) => e.stopPropagation()}
                 className="rt-score"
               >
-                🍅 {movie.rt_critic_score}%
+                🍿 {movie.rt_audience_score}%
               </a>
             ) : (
-              <span className="rt-score">🍅 {movie.rt_critic_score}%</span>
+              <span className="rt-score">🍿 {movie.rt_audience_score}%</span>
             )
           )}
         </div>

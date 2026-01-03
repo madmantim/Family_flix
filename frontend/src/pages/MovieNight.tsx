@@ -8,7 +8,7 @@ import {
   markMovieWatched,
 } from '../api/client';
 import { BottomNav } from '../components/BottomNav';
-import { TMDB_BASE_URL, getInitials, getColor, getAvatarUrl, parseGenres } from '../utils';
+import { TMDB_BASE_URL, getInitials, getColor, getAvatarUrl, parseGenres, formatContentRating } from '../utils';
 import type { MatchedMovie, Movie } from '../types';
 import './MovieNight.css';
 
@@ -251,15 +251,18 @@ export function MovieNight() {
                             </div>
 
                             <div className="meta-row">
+                              {matches[currentIndex].movie.content_rating && (
+                                <span className="meta-item">{formatContentRating(matches[currentIndex].movie.content_rating)}</span>
+                              )}
                               {matches[currentIndex].movie.runtime && (
                                 <span className="meta-item">{matches[currentIndex].movie.runtime} min</span>
                               )}
                               {matches[currentIndex].movie.vote_average && (
                                 <span className="meta-item">TMDB {(matches[currentIndex].movie.vote_average / 10).toFixed(1)}</span>
                               )}
-                              {matches[currentIndex].movie.rt_critic_score && (
-                                <span className="rt-score critic">
-                                  🍅 {matches[currentIndex].movie.rt_critic_score}%
+                              {matches[currentIndex].movie.rt_audience_score && (
+                                <span className="rt-score audience">
+                                  🍿 {matches[currentIndex].movie.rt_audience_score}%
                                 </span>
                               )}
                             </div>
