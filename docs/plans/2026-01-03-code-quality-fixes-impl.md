@@ -65,7 +65,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
   - Add appropriate length constraints to other string fields
   - Test: `pytest tests/test_members.py` must pass
 
-- [ ] **B9: Create watchlist router tests**
+- [x] **B9: Create watchlist router tests**
   - Create: `backend/tests/test_watchlist.py`
   - Test: add to watchlist, remove from watchlist, duplicate handling
   - Coverage: At least 3 test cases
