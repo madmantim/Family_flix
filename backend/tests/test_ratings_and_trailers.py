@@ -582,8 +582,7 @@ class TestHistoryReturnsRatingsAndTrailers:
         # Mark as watched using new /watched/ endpoint
         resp = client.post("/api/watched/", json={
             "movie_id": movie.id,
-            "member_ids": [member.id],
-            "would_rewatch": False
+            "member_ids": [member.id]
         })
         assert resp.status_code == 200
 

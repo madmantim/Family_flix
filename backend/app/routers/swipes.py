@@ -41,21 +41,17 @@ def create_swipe(swipe: SwipeCreate, db: Session = Depends(get_db)):
         )
         db.add(db_swipe)
 
-    # If watched flag is set, create/update MemberWatched record
+    # If watched flag is set, create MemberWatched record if not exists
     if swipe.watched:
-        would_rewatch = swipe.direction == SwipeDirection.YES
         existing_watched = db.query(MemberWatched).filter(
             MemberWatched.member_id == swipe.member_id,
             MemberWatched.movie_id == swipe.movie_id
         ).first()
 
-        if existing_watched:
-            existing_watched.would_rewatch = would_rewatch
-        else:
+        if not existing_watched:
             watched_record = MemberWatched(
                 member_id=swipe.member_id,
-                movie_id=swipe.movie_id,
-                would_rewatch=would_rewatch
+                movie_id=swipe.movie_id
             )
             db.add(watched_record)
 
