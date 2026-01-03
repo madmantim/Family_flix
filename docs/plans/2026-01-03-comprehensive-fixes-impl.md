@@ -849,7 +849,7 @@ curl -I http://your-server/static/avatars/1.jpg | grep -i cache
 
 ---
 
-### [ ] P5-3: Add .dockerignore files
+### [x] P5-3: Add .dockerignore files
 
 **Files to Create:**
 - `backend/.dockerignore`
