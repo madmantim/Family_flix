@@ -29,7 +29,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
 
 ### Backend Medium Priority
 
-- [ ] **B3: Add error handling wrapper for TMDB service**
+- [x] **B3: Add error handling wrapper for TMDB service**
   - File: `backend/app/services/tmdb.py`
   - Wrap httpx calls with try/except for TimeoutException and HTTPStatusError
   - Return None or raise HTTPException with appropriate status codes

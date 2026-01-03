@@ -1,6 +1,9 @@
 import httpx
+import logging
 from typing import Optional
 from ..config import get_settings
+
+logger = logging.getLogger(__name__)
 
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
@@ -17,27 +20,41 @@ class TMDBService:
 
     async def search_movies(self, query: str, page: int = 1) -> dict:
         """Search for movies by title"""
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{TMDB_BASE_URL}/search/movie",
-                params={"query": query, "page": page, "include_adult": False},
-                headers=self.headers
-            )
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"{TMDB_BASE_URL}/search/movie",
+                    params={"query": query, "page": page, "include_adult": False},
+                    headers=self.headers
+                )
+                response.raise_for_status()
+                return response.json()
+        except httpx.TimeoutException:
+            logger.error("TMDB search_movies timeout for query: %s", query)
+            return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
+        except httpx.HTTPStatusError as e:
+            logger.error("TMDB search_movies HTTP error: %s", e)
+            return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
 
     async def get_movie(self, tmdb_id: int) -> Optional[dict]:
         """Get full movie details"""
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{TMDB_BASE_URL}/movie/{tmdb_id}",
-                params={"append_to_response": "release_dates,credits,videos"},
-                headers=self.headers
-            )
-            if response.status_code == 404:
-                return None
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"{TMDB_BASE_URL}/movie/{tmdb_id}",
+                    params={"append_to_response": "release_dates,credits,videos"},
+                    headers=self.headers
+                )
+                if response.status_code == 404:
+                    return None
+                response.raise_for_status()
+                return response.json()
+        except httpx.TimeoutException:
+            logger.error("TMDB get_movie timeout for tmdb_id: %d", tmdb_id)
+            return None
+        except httpx.HTTPStatusError as e:
+            logger.error("TMDB get_movie HTTP error for tmdb_id %d: %s", tmdb_id, e)
+            return None
 
     @staticmethod
     def get_trailer_url(tmdb_data: dict) -> Optional[str]:
@@ -62,25 +79,39 @@ class TMDBService:
 
     async def get_trending(self, time_window: str = "week", page: int = 1) -> dict:
         """Get trending movies"""
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{TMDB_BASE_URL}/trending/movie/{time_window}",
-                params={"page": page},
-                headers=self.headers
-            )
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"{TMDB_BASE_URL}/trending/movie/{time_window}",
+                    params={"page": page},
+                    headers=self.headers
+                )
+                response.raise_for_status()
+                return response.json()
+        except httpx.TimeoutException:
+            logger.error("TMDB get_trending timeout for time_window: %s", time_window)
+            return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
+        except httpx.HTTPStatusError as e:
+            logger.error("TMDB get_trending HTTP error: %s", e)
+            return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
 
     async def get_popular(self, page: int = 1) -> dict:
         """Get popular movies"""
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{TMDB_BASE_URL}/movie/popular",
-                params={"page": page},
-                headers=self.headers
-            )
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"{TMDB_BASE_URL}/movie/popular",
+                    params={"page": page},
+                    headers=self.headers
+                )
+                response.raise_for_status()
+                return response.json()
+        except httpx.TimeoutException:
+            logger.error("TMDB get_popular timeout")
+            return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
+        except httpx.HTTPStatusError as e:
+            logger.error("TMDB get_popular HTTP error: %s", e)
+            return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
 
     async def discover_movies(
         self,
@@ -105,14 +136,21 @@ class TMDBService:
         if vote_count_gte:
             params["vote_count.gte"] = vote_count_gte
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{TMDB_BASE_URL}/discover/movie",
-                params=params,
-                headers=self.headers
-            )
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"{TMDB_BASE_URL}/discover/movie",
+                    params=params,
+                    headers=self.headers
+                )
+                response.raise_for_status()
+                return response.json()
+        except httpx.TimeoutException:
+            logger.error("TMDB discover_movies timeout")
+            return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
+        except httpx.HTTPStatusError as e:
+            logger.error("TMDB discover_movies HTTP error: %s", e)
+            return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
 
     @staticmethod
     def get_poster_url(poster_path: str, size: str = "w500") -> Optional[str]:
