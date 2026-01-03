@@ -35,46 +35,62 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
     filter_order = [ContentRating.ALL_AGES, ContentRating.TEEN, ContentRating.MATURE, ContentRating.ADULT]
     min_filter = min(content_filters, key=lambda x: filter_order.index(x))
 
-    # Get all active watchlist movies
-    active_movies = db.query(Movie).join(WatchlistEntry).filter(
+    # Get all active watchlist entries with movies
+    active_entries = db.query(WatchlistEntry).filter(
         WatchlistEntry.is_active == True
     ).all()
+
+    movie_ids = [e.movie_id for e in active_entries]
+    active_movies = db.query(Movie).filter(Movie.id.in_(movie_ids)).all() if movie_ids else []
+    movies_by_id = {m.id: m for m in active_movies}
+    entries_by_movie_id = {e.movie_id: e for e in active_entries}
 
     # Filter by content rating
     allowed_ratings = filter_order[:filter_order.index(min_filter) + 1]
     filtered_movies = [m for m in active_movies if m.content_rating in allowed_ratings]
+    filtered_movie_ids = [m.id for m in filtered_movies]
+
+    # Batch-load all YES swipes from present members for filtered movies
+    all_yes_swipes = db.query(Swipe).filter(
+        Swipe.movie_id.in_(filtered_movie_ids),
+        Swipe.member_id.in_(member_ids),
+        Swipe.direction == SwipeDirection.YES
+    ).all() if filtered_movie_ids else []
+
+    # Build lookup: movie_id -> set of member_ids who voted YES
+    yes_by_movie = {}
+    for swipe in all_yes_swipes:
+        if swipe.movie_id not in yes_by_movie:
+            yes_by_movie[swipe.movie_id] = set()
+        yes_by_movie[swipe.movie_id].add(swipe.member_id)
+
+    # Batch-load all watched records for present members
+    all_watched = db.query(MemberWatched).filter(
+        MemberWatched.movie_id.in_(filtered_movie_ids),
+        MemberWatched.member_id.in_(member_ids)
+    ).all() if filtered_movie_ids else []
+
+    # Build lookup: movie_id -> set of member_ids who watched
+    watched_by_movie = {}
+    for w in all_watched:
+        if w.movie_id not in watched_by_movie:
+            watched_by_movie[w.movie_id] = set()
+        watched_by_movie[w.movie_id].add(w.member_id)
 
     matches = []
 
     for movie in filtered_movies:
-        # Get yes swipes from present members
-        yes_swipes = db.query(Swipe).filter(
-            Swipe.movie_id == movie.id,
-            Swipe.member_id.in_(member_ids),
-            Swipe.direction == SwipeDirection.YES
-        ).all()
-
-        yes_member_ids = {s.member_id for s in yes_swipes}
+        # Get yes swipes from present members (from pre-loaded data)
+        yes_member_ids = yes_by_movie.get(movie.id, set())
         yes_voters = [members_by_id[mid] for mid in yes_member_ids if mid in members_by_id]
         y_count = len(yes_member_ids)
 
         # Count N(W) - members who voted NO (or didn't vote YES) AND have watched
-        n_watched_count = 0
-        for mid in member_ids:
-            if mid not in yes_member_ids:
-                # This member didn't vote YES - check if they've watched
-                watched = db.query(MemberWatched).filter(
-                    MemberWatched.member_id == mid,
-                    MemberWatched.movie_id == movie.id
-                ).first()
-                if watched:
-                    n_watched_count += 1
+        watched_member_ids = watched_by_movie.get(movie.id, set())
+        n_watched_count = sum(1 for mid in member_ids if mid not in yes_member_ids and mid in watched_member_ids)
 
-        # Get watchlist entry for recency
-        entry = db.query(WatchlistEntry).filter(
-            WatchlistEntry.movie_id == movie.id,
-            WatchlistEntry.is_active == True
-        ).first()
+        # Get watchlist entry for recency (from pre-loaded data)
+        entry = entries_by_movie_id.get(movie.id)
 
         matches.append({
             "movie": movie,

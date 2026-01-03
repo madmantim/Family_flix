@@ -21,7 +21,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
   - Add: `UniqueConstraint('member_id', 'movie_id', name='unique_member_movie_swipe')`
   - Test: Existing tests should still pass (constraint enforced in app logic already)
 
-- [ ] **B2: Fix N+1 queries in movie night matching**
+- [x] **B2: Fix N+1 queries in movie night matching**
   - File: `backend/app/routers/movie_night.py`
   - Batch-load all swipes and watched records before the loop
   - Build lookup dicts: `swipes_by_movie[movie_id] = [swipes...]`
