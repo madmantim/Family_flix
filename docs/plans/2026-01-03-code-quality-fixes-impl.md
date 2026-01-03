@@ -94,7 +94,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
 
 ### Frontend Low Priority
 
-- [ ] **F4: Move pure functions outside MovieNight component**
+- [x] **F4: Move pure functions outside MovieNight component**
   - File: `frontend/src/pages/MovieNight.tsx`
   - Move `getInitials`, `getColor`, `parseGenres` outside component (or use from utils)
   - Test: `npm run build` must pass
@@ -111,11 +111,11 @@ After ALL tasks complete:
 ## Success Criteria
 
 All of the following must be true:
-- [ ] All checklist items marked complete
-- [ ] `pytest` passes with 0 failures
-- [ ] `npm run lint` passes with 0 errors
-- [ ] `npm run build` succeeds
-- [ ] No functionality removed or broken
+- [x] All checklist items marked complete
+- [x] `pytest` passes with 0 failures
+- [x] `npm run lint` passes with 0 errors
+- [x] `npm run build` succeeds
+- [x] No functionality removed or broken
 
 ## Iteration Strategy
 
