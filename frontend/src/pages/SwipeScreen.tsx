@@ -20,6 +20,8 @@ const SWIPE_HELP_ITEMS = [
 const BATCH_SIZE = 100;
 // Refetch more movies when we're down to this many
 const REFETCH_THRESHOLD = 5;
+// Minimum drag distance to trigger a swipe
+const SWIPE_THRESHOLD_PX = 100;
 
 function MovieCard({
   movie,
@@ -43,10 +45,9 @@ function MovieCard({
 
   const handleDragEnd = useCallback(
     (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-      const threshold = 100;
-      if (info.offset.x > threshold) {
+      if (info.offset.x > SWIPE_THRESHOLD_PX) {
         onSwipe('yes');
-      } else if (info.offset.x < -threshold) {
+      } else if (info.offset.x < -SWIPE_THRESHOLD_PX) {
         onSwipe('no');
       }
     },

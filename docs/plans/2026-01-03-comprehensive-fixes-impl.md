@@ -510,7 +510,7 @@ cd /Users/tim/Claude/Movie_picker/frontend && npm run lint && npm run build
 
 ---
 
-### [ ] P3-7: Define constants for magic numbers
+### [x] P3-7: Define constants for magic numbers
 
 **Files:**
 - `frontend/src/pages/UserSelect.tsx` - long press delay (500)

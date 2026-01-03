@@ -8,6 +8,8 @@ import { getInitials, getColor } from '../utils';
 import type { Member } from '../types';
 import './UserSelect.css';
 
+const LONG_PRESS_DELAY_MS = 500;
+
 export function UserSelect() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -70,7 +72,7 @@ export function UserSelect() {
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true;
       setEditingId(memberId);
-    }, 500);
+    }, LONG_PRESS_DELAY_MS);
   };
 
   const handleTouchEnd = () => {
