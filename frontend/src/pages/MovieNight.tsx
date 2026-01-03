@@ -260,9 +260,9 @@ export function MovieNight() {
                               {matches[currentIndex].movie.vote_average && (
                                 <span className="meta-item">TMDB {(matches[currentIndex].movie.vote_average / 10).toFixed(1)}</span>
                               )}
-                              {matches[currentIndex].movie.rt_audience_score && (
-                                <span className="rt-score audience">
-                                  🍿 {matches[currentIndex].movie.rt_audience_score}%
+                              {matches[currentIndex].movie.rt_critic_score && (
+                                <span className="rt-score critic">
+                                  🍅 {matches[currentIndex].movie.rt_critic_score}%
                                 </span>
                               )}
                             </div>
