@@ -21,33 +21,42 @@
 .watchlist-page .header-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
-.watchlist-page .add-btn {
-  background: #e50914;
-  color: #fff;
+/* Icon button base style - 44px touch target for iOS */
+.watchlist-page .icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   border: none;
-  padding: 0.75rem 1.25rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.show-watched-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: #888;
+  justify-content: center;
   cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1.25rem;
 }
 
-.show-watched-toggle input {
-  width: 18px;
-  height: 18px;
-  accent-color: #e50914;
+/* Discover button */
+.watchlist-page .discover-btn {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.watchlist-page .discover-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Add button - primary action */
+.watchlist-page .add-btn {
+  background: var(--color-brand);
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 300;
+}
+
+.watchlist-page .add-btn:hover {
+  opacity: 0.9;
 }
 
 .watchlist-page .loading,
@@ -62,13 +71,19 @@
 
 .watchlist-page .empty button {
   margin-top: 1rem;
-  background: #e50914;
+  background: var(--color-brand);
   color: #fff;
   border: none;
   padding: 1rem 2rem;
   font-size: 1rem;
+  font-weight: 600;
   border-radius: 12px;
   cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.watchlist-page .empty button:hover {
+  opacity: 0.9;
 }
 
 .movie-grid {
@@ -184,7 +199,7 @@
 
 .search-bar button {
   padding: 1rem 1.5rem;
-  background: #e50914;
+  background: var(--color-brand);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -265,112 +280,6 @@
   cursor: pointer;
 }
 
-.watchlist-page .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-around;
-  padding: 0.75rem;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 0.75rem);
-  background: rgba(0, 0, 0, 0.9);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.watchlist-page .bottom-nav button {
-  background: none;
-  border: none;
-  color: #666;
-  font-size: 0.85rem;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-
-.watchlist-page .bottom-nav button.active {
-  color: #e50914;
-}
-
-.watched-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
-}
-
-.watched-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: #1a1a2e;
-  border-radius: 12px;
-}
-
-.watched-item .poster {
-  width: 50px;
-  height: 75px;
-  background-size: cover;
-  background-position: center;
-  background-color: #2a2a3e;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-
-.watched-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.watched-info h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.watched-info p {
-  margin: 0.25rem 0 0;
-  font-size: 0.8rem;
-  color: #888;
-}
-
-.rewatch-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #888;
-  font-size: 1.5rem;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
-}
-
-.rewatch-btn.active {
-  background: rgba(229, 9, 20, 0.2);
-  color: #e50914;
-}
-
-/* Discover Button */
-.discover-btn {
-  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.discover-btn:hover {
-  opacity: 0.9;
-}
-
 /* Discover Modal */
 .discover-modal {
   position: fixed;
@@ -435,7 +344,7 @@
 }
 
 .discover-tabs .tab.active {
-  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  background: var(--color-brand);
   color: white;
 }
 
@@ -504,6 +413,6 @@
 
 .discover-item .rating {
   font-size: 0.7rem;
-  color: #f7931e;
+  color: #fbbf24;
   text-align: center;
 }
