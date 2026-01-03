@@ -59,7 +59,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
   - Update routers to use helper: `movies.py`, `swipes.py`, `watchlist.py`, `movie_night.py`, `watched.py`
   - Test: All backend tests must pass
 
-- [ ] **B8: Add input validation to schemas**
+- [x] **B8: Add input validation to schemas**
   - File: `backend/app/schemas.py`
   - Add `Field(..., max_length=100)` to `MemberCreate.name`
   - Add appropriate length constraints to other string fields

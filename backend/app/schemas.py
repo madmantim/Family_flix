@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from .models import ContentRating, SwipeDirection
@@ -6,8 +6,8 @@ from .models import ContentRating, SwipeDirection
 
 # Member schemas
 class MemberBase(BaseModel):
-    name: str
-    avatar_url: Optional[str] = None
+    name: str = Field(..., max_length=100)
+    avatar_url: Optional[str] = Field(None, max_length=500)
     content_filter: ContentRating = ContentRating.ADULT
 
 
@@ -16,8 +16,8 @@ class MemberCreate(MemberBase):
 
 
 class MemberUpdate(BaseModel):
-    name: Optional[str] = None
-    avatar_url: Optional[str] = None
+    name: Optional[str] = Field(None, max_length=100)
+    avatar_url: Optional[str] = Field(None, max_length=500)
     content_filter: Optional[ContentRating] = None
 
 
@@ -31,20 +31,20 @@ class MemberResponse(MemberBase):
 # Movie schemas
 class MovieBase(BaseModel):
     tmdb_id: int
-    title: str
+    title: str = Field(..., max_length=500)
     year: Optional[int] = None
-    overview: Optional[str] = None
-    poster_path: Optional[str] = None
-    backdrop_path: Optional[str] = None
+    overview: Optional[str] = Field(None, max_length=2000)
+    poster_path: Optional[str] = Field(None, max_length=200)
+    backdrop_path: Optional[str] = Field(None, max_length=200)
     vote_average: Optional[int] = None
     content_rating: ContentRating = ContentRating.ALL_AGES
     runtime: Optional[int] = None
-    genres: Optional[str] = None
-    imdb_id: Optional[str] = None
+    genres: Optional[str] = Field(None, max_length=500)
+    imdb_id: Optional[str] = Field(None, max_length=20)
     rt_critic_score: Optional[int] = None
     rt_audience_score: Optional[int] = None
-    rt_url: Optional[str] = None
-    trailer_url: Optional[str] = None
+    rt_url: Optional[str] = Field(None, max_length=500)
+    trailer_url: Optional[str] = Field(None, max_length=500)
 
 
 class MovieCreate(MovieBase):
@@ -82,7 +82,7 @@ class SwipeResponse(BaseModel):
 class WatchlistEntryCreate(BaseModel):
     tmdb_id: int
     added_by_id: int
-    source: str = "manual"
+    source: str = Field("manual", max_length=50)
 
 
 class WatchlistEntryResponse(BaseModel):
