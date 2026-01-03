@@ -1,0 +1,54 @@
+# Family Flix Picker - Homelab Production Deployment
+# Deploy to: mediastack-as LXC (103) at /opt/familyflix
+# Access via: http://mediastack-as.bone-egret.ts.net:8088
+#
+# This configuration exposes port 8088 on the host for Tailscale access.
+# No Tailscale sidecar needed - uses existing mediastack Tailscale identity.
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: familyflix-backend
+    restart: unless-stopped
+    environment:
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - TMDB_ACCESS_TOKEN=${TMDB_ACCESS_TOKEN}
+      - OMDB_API_KEY=${OMDB_API_KEY}
+      - DATABASE_URL=sqlite:///data/family_flix.db
+    volumes:
+      - app-data:/app/data
+      - app-static:/app/static
+    networks:
+      - familyflix
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: familyflix-frontend
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - familyflix
+
+networks:
+  familyflix:
+    driver: bridge
+
+volumes:
+  app-data:
+    name: familyflix-data
+  app-static:
+    name: familyflix-static
