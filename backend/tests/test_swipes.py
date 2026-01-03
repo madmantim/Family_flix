@@ -87,18 +87,19 @@ def test_swipe_updates_existing(client, db):
     assert resp1.status_code == 201
     assert resp1.json()["direction"] == "no"
 
-    # Second swipe - should fail with 400 (already swiped)
+    # Second swipe - should update to YES
     resp2 = client.post("/api/swipes/", json={
         "member_id": member.id,
         "movie_id": movie.id,
         "direction": "yes"
     })
-    assert resp2.status_code == 400
-    assert "Already swiped" in resp2.json()["detail"]
+    assert resp2.status_code == 201
+    assert resp2.json()["direction"] == "yes"
 
-    # Should still only have one swipe
+    # Should still only have one swipe (updated, not duplicated)
     swipes = client.get(f"/api/swipes/member/{member.id}")
     assert len(swipes.json()) == 1
+    assert swipes.json()[0]["direction"] == "yes"
 
 
 def test_swipe_invalid_member(client, db):
