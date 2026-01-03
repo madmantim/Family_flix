@@ -75,7 +75,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ---
 
-### [ ] P1-3: Single commit pattern in watched.py batch endpoint
+### [x] P1-3: Single commit pattern in watched.py batch endpoint
 
 **File:** `backend/app/routers/watched.py`
 **Lines:** ~111-149 (POST /batch endpoint)

@@ -125,8 +125,7 @@ def mark_watched(request: MarkWatchedRequest, db: Session = Depends(get_db)):
                 movie_id=request.movie_id
             )
             db.add(watched)
-            db.commit()
-            db.refresh(watched)
+            db.flush()  # Get ID without committing
             results.append(watched)
 
         # Flip swipe to NO for this member (they just watched it)
@@ -137,7 +136,6 @@ def mark_watched(request: MarkWatchedRequest, db: Session = Depends(get_db)):
 
         if existing_swipe:
             existing_swipe.direction = SwipeDirection.NO
-            db.commit()
         else:
             # Create NO swipe if none exists
             new_swipe = Swipe(
@@ -146,7 +144,11 @@ def mark_watched(request: MarkWatchedRequest, db: Session = Depends(get_db)):
                 direction=SwipeDirection.NO
             )
             db.add(new_swipe)
-            db.commit()
+
+    # Single commit for all changes
+    db.commit()
+    for r in results:
+        db.refresh(r)
 
     return results
 
