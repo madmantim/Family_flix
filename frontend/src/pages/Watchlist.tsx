@@ -67,7 +67,12 @@ export function Watchlist() {
     mutationFn: (tmdbId: number) => addToWatchlist(tmdbId, memberId!),
     onSuccess: async (entry) => {
       // Auto-swipe "yes" for the user who added the movie
-      await recordSwipe(memberId!, entry.movie.id, 'yes', false);
+      try {
+        await recordSwipe(memberId!, entry.movie.id, 'yes', false);
+      } catch (error) {
+        console.error('Auto-swipe failed:', error);
+        // Operation still succeeds for add, just the auto-swipe failed
+      }
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
       queryClient.invalidateQueries({ queryKey: ['swipeQueue'] });
       queryClient.invalidateQueries({ queryKey: ['memberSwipes', memberId] });

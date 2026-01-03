@@ -365,7 +365,7 @@ cd /Users/tim/Claude/Movie_picker/frontend && npm run lint && npm run build
 
 ---
 
-### [ ] P3-3: Add error handling to async mutation onSuccess
+### [x] P3-3: Add error handling to async mutation onSuccess
 
 **File:** `frontend/src/pages/Watchlist.tsx`
 **Lines:** ~70-79
