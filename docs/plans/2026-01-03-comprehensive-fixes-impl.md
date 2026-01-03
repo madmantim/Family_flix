@@ -201,7 +201,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ---
 
-### [ ] P2-2: Extract RT slug generation helper in OMDb
+### [x] P2-2: Extract RT slug generation helper in OMDb
 
 **File:** `backend/app/services/omdb.py`
 **Lines:** ~54-65 and ~110-117

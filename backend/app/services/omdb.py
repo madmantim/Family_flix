@@ -13,6 +13,23 @@ class OMDbService:
         settings = get_settings()
         self.api_key = settings.omdb_api_key
 
+    @staticmethod
+    def _generate_rt_slug(title: str) -> str:
+        """Generate Rotten Tomatoes URL slug from movie title."""
+        slug = title.lower()
+        slug = slug.replace(":", "")
+        slug = slug.replace("'", "")
+        slug = slug.replace("&", "and")
+        slug = slug.replace(" - ", "_")
+        slug = slug.replace(" ", "_")
+        slug = "".join(c for c in slug if c.isalnum() or c == "_")
+        return slug
+
+    def get_rt_url(self, title: str) -> str:
+        """Generate full Rotten Tomatoes URL from movie title."""
+        slug = self._generate_rt_slug(title)
+        return f"https://www.rottentomatoes.com/m/{slug}"
+
     async def get_ratings_by_imdb_id(self, imdb_id: str) -> Optional[dict]:
         """Get movie ratings from OMDb using IMDB ID"""
         if not self.api_key or not imdb_id:
@@ -49,20 +66,9 @@ class OMDbService:
                 # OMDb doesn't always have audience score in Ratings
                 # But we can construct the RT URL from the title
                 title = data.get("Title", "")
-                year = data.get("Year", "")
 
                 # Construct RT URL (best effort - may not always be exact)
-                rt_url = None
-                if title:
-                    # RT URL format: https://www.rottentomatoes.com/m/movie_name
-                    slug = title.lower()
-                    slug = slug.replace(":", "")
-                    slug = slug.replace("'", "")
-                    slug = slug.replace("&", "and")
-                    slug = slug.replace(" - ", "_")
-                    slug = slug.replace(" ", "_")
-                    slug = "".join(c for c in slug if c.isalnum() or c == "_")
-                    rt_url = f"https://www.rottentomatoes.com/m/{slug}"
+                rt_url = self.get_rt_url(title) if title else None
 
                 return {
                     "rt_critic_score": rt_critic,
@@ -104,14 +110,7 @@ class OMDbService:
                             pass
 
                 title = data.get("Title", "")
-                slug = title.lower()
-                slug = slug.replace(":", "")
-                slug = slug.replace("'", "")
-                slug = slug.replace("&", "and")
-                slug = slug.replace(" - ", "_")
-                slug = slug.replace(" ", "_")
-                slug = "".join(c for c in slug if c.isalnum() or c == "_")
-                rt_url = f"https://www.rottentomatoes.com/m/{slug}"
+                rt_url = self.get_rt_url(title) if title else None
 
                 return {
                     "rt_critic_score": rt_critic,
