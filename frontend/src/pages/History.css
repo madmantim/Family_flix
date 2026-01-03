@@ -100,9 +100,11 @@
 }
 
 .history-item .info {
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;
 }
 
 .history-item h3 {
@@ -121,17 +123,32 @@
 .history-item .rewatch-btn {
   background: none;
   border: none;
-  font-size: 1.5rem;
   cursor: pointer;
   padding: 0.5rem;
   color: #666;
   transition: color 0.2s, transform 0.2s;
   flex-shrink: 0;
   align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.history-item .rewatch-btn .rewatch-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.history-item .rewatch-btn .rewatch-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .history-item .rewatch-btn:hover:not(:disabled) {
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .history-item .rewatch-btn.active {
@@ -139,7 +156,6 @@
 }
 
 .history-item .rewatch-btn:disabled {
-  opacity: 0.5;
   cursor: default;
 }
 

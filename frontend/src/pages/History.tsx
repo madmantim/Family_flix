@@ -30,7 +30,8 @@ export function History() {
   });
 
   const rewatchMutation = useMutation({
-    mutationFn: (movieId: number) => recordSwipe(memberId!, movieId, 'yes'),
+    mutationFn: ({ movieId, direction }: { movieId: number; direction: 'yes' | 'no' }) =>
+      recordSwipe(memberId!, movieId, direction),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['memberSwipes', memberId] });
     },
@@ -111,11 +112,14 @@ export function History() {
                 </div>
                 <button
                   className={`rewatch-btn ${hasYesVote ? 'active' : ''}`}
-                  onClick={() => rewatchMutation.mutate(entry.movie.id)}
-                  disabled={rewatchMutation.isPending || hasYesVote}
-                  title={hasYesVote ? 'On your watchlist' : 'Want to watch again'}
+                  onClick={() => rewatchMutation.mutate({
+                    movieId: entry.movie.id,
+                    direction: hasYesVote ? 'no' : 'yes'
+                  })}
+                  disabled={rewatchMutation.isPending}
                 >
-                  {hasYesVote ? '♥' : '♡'}
+                  <span className="rewatch-icon">{hasYesVote ? '♥' : '♡'}</span>
+                  <span className="rewatch-label">{hasYesVote ? 'Added' : 'Watch Again'}</span>
                 </button>
               </motion.div>
             );

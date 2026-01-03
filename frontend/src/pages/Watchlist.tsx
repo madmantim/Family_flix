@@ -22,6 +22,8 @@ import type { TMDBSearchResult, WatchlistEntry, SwipeDirection } from '../types'
 import './Watchlist.css';
 
 const WATCHLIST_HELP_ITEMS = [
+  { icon: '🔥', label: 'Discover popular movies' },
+  { icon: '+', label: 'Search & add movies' },
   { icon: '✕', label: 'Pass' },
   { icon: '♥', label: 'Watch / Rewatch' },
   { icon: '👁', label: 'Seen it' },
