@@ -44,6 +44,9 @@ export function MovieNight() {
         setStage('browse');
       }
     },
+    onError: (error) => {
+      console.error('Failed to get matches:', error);
+    },
   });
 
   const watchedMutation = useMutation({
@@ -56,6 +59,9 @@ export function MovieNight() {
       setMatches([]);
       setResult(null);
       setCurrentIndex(0);
+    },
+    onError: (error) => {
+      console.error('Failed to mark watched:', error);
     },
   });
 

@@ -403,7 +403,7 @@ cd /Users/tim/Claude/Movie_picker/frontend && npm run lint && npm run build
 
 ---
 
-### [ ] P3-4: Add onError handlers to all mutations
+### [x] P3-4: Add onError handlers to all mutations
 
 **Files:**
 - `frontend/src/pages/Watchlist.tsx` - addMutation, removeMutation, reactivateMutation

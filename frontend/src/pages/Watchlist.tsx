@@ -80,12 +80,18 @@ export function Watchlist() {
       setSearchQuery('');
       setSearchResults([]);
     },
+    onError: (error) => {
+      console.error('Failed to add movie:', error);
+    },
   });
 
   const removeMutation = useMutation({
     mutationFn: (entryId: number) => removeFromWatchlist(entryId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+    },
+    onError: (error) => {
+      console.error('Failed to remove movie:', error);
     },
   });
 
@@ -96,6 +102,9 @@ export function Watchlist() {
       queryClient.invalidateQueries({ queryKey: ['swipeQueue'] });
       queryClient.invalidateQueries({ queryKey: ['memberSwipes', memberId] });
     },
+    onError: (error) => {
+      console.error('Failed to record swipe:', error);
+    },
   });
 
   const watchedMutation = useMutation({
@@ -103,12 +112,18 @@ export function Watchlist() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['memberWatched', memberId] });
     },
+    onError: (error) => {
+      console.error('Failed to mark watched:', error);
+    },
   });
 
   const unwatchMutation = useMutation({
     mutationFn: (movieId: number) => removeWatched(memberId!, movieId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['memberWatched', memberId] });
+    },
+    onError: (error) => {
+      console.error('Failed to unwatch movie:', error);
     },
   });
 
