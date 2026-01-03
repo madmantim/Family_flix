@@ -72,8 +72,8 @@ class WatchlistEntry(Base):
     __tablename__ = "watchlist_entries"
 
     id = Column(Integer, primary_key=True, index=True)
-    movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False)
-    added_by_id = Column(Integer, ForeignKey("members.id"), nullable=False)
+    movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False, index=True)
+    added_by_id = Column(Integer, ForeignKey("members.id"), nullable=False, index=True)
     source = Column(String(50), default="manual")  # manual, curated, trending
     added_at = Column(DateTime, default=utc_now)
     is_active = Column(Boolean, default=True)  # False when watched
@@ -87,8 +87,8 @@ class Swipe(Base):
     __tablename__ = "swipes"
 
     id = Column(Integer, primary_key=True, index=True)
-    member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
-    movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False)
+    member_id = Column(Integer, ForeignKey("members.id"), nullable=False, index=True)
+    movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False, index=True)
     direction = Column(SQLEnum(SwipeDirection), nullable=False)
     swiped_at = Column(DateTime, default=utc_now)
 
@@ -105,8 +105,8 @@ class MemberWatched(Base):
     __tablename__ = "member_watched"
 
     id = Column(Integer, primary_key=True, index=True)
-    member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
-    movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False)
+    member_id = Column(Integer, ForeignKey("members.id"), nullable=False, index=True)
+    movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False, index=True)
     watched_at = Column(DateTime, default=utc_now)
 
     member = relationship("Member", back_populates="watched_movies")

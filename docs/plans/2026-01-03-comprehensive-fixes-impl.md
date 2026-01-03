@@ -46,7 +46,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ---
 
-### [ ] P1-2: Add database indexes on foreign keys
+### [x] P1-2: Add database indexes on foreign keys
 
 **File:** `backend/app/models.py`
 
