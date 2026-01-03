@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from typing import List
 from ..database import get_db
 from ..models import Swipe, Movie, Member, WatchlistEntry, SwipeDirection, MemberWatched
@@ -67,13 +68,15 @@ def get_swipe_queue(member_id: int, limit: int = 20, db: Session = Depends(get_d
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    # Get IDs of movies already swiped
-    swiped_ids = db.query(Swipe.movie_id).filter(Swipe.member_id == member_id).subquery()
+    # Get IDs of movies already swiped (using scalar_subquery to avoid deprecation warning)
+    swiped_subquery = select(Swipe.movie_id).where(
+        Swipe.member_id == member_id
+    ).scalar_subquery()
 
     # Get active watchlist movies not yet swiped, filtered by content rating
     query = db.query(Movie).join(WatchlistEntry).filter(
         WatchlistEntry.is_active == True,
-        ~Movie.id.in_(swiped_ids)
+        ~Movie.id.in_(swiped_subquery)
     )
 
     # Apply content filter based on member's setting
