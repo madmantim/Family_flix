@@ -1,9 +1,8 @@
 // frontend/src/components/MovieDetailCard.tsx
 import { motion } from 'framer-motion';
 import type { WatchlistEntry, SwipeDirection } from '../types';
+import { TMDB_BASE_URL, parseGenres } from '../utils';
 import './MovieDetailCard.css';
-
-const TMDB_BASE_URL = 'https://www.themoviedb.org/movie/';
 
 interface MovieDetailCardProps {
   entry: WatchlistEntry;
@@ -27,15 +26,6 @@ export function MovieDetailCard({
   onWatchedToggle,
 }: MovieDetailCardProps) {
   const movie = entry.movie;
-
-  const parseGenres = (genres: string | null): string[] => {
-    if (!genres) return [];
-    try {
-      return JSON.parse(genres);
-    } catch {
-      return [];
-    }
-  };
 
   const openTrailer = (e: React.MouseEvent) => {
     e.stopPropagation();

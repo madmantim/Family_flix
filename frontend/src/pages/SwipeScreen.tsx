@@ -6,6 +6,7 @@ import { getSwipeQueue, recordSwipe } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { HelpTooltip } from '../components/HelpTooltip';
 import { BottomNav } from '../components/BottomNav';
+import { TMDB_BASE_URL, parseGenres } from '../utils';
 import type { Movie, SwipeDirection } from '../types';
 import './SwipeScreen.css';
 
@@ -14,8 +15,6 @@ const SWIPE_HELP_ITEMS = [
   { icon: '♥', label: 'Watch / Rewatch' },
   { icon: '👁', label: 'Seen it' },
 ];
-
-const TMDB_BASE_URL = 'https://www.themoviedb.org/movie/';
 
 // Fetch a larger batch to reduce API calls
 const BATCH_SIZE = 100;
@@ -53,15 +52,6 @@ function MovieCard({
     },
     [onSwipe]
   );
-
-  const parseGenres = (genres: string | null): string[] => {
-    if (!genres) return [];
-    try {
-      return JSON.parse(genres);
-    } catch {
-      return [];
-    }
-  };
 
   const openTrailer = (e: React.MouseEvent) => {
     e.stopPropagation();

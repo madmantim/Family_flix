@@ -72,7 +72,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
 
 ### Frontend High Priority
 
-- [ ] **F1: Extract shared utilities**
+- [x] **F1: Extract shared utilities**
   - Create: `frontend/src/utils/index.ts`
   - Move: `TMDB_BASE_URL`, `AVATAR_COLORS`, `getInitials`, `parseGenres`, `getAvatarUrl`
   - Update imports in: `SwipeScreen.tsx`, `MovieNight.tsx`, `MovieDetailCard.tsx`, `UserSelect.tsx`, `BottomNav.tsx`

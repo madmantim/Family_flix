@@ -4,10 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getMembers, createMember, uploadAvatar } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
+import { getInitials, getColor } from '../utils';
 import type { Member } from '../types';
 import './UserSelect.css';
-
-const AVATAR_COLORS = ['#E53935', '#8E24AA', '#1E88E5', '#43A047', '#FB8C00', '#00ACC1', '#5E35B1'];
 
 export function UserSelect() {
   const navigate = useNavigate();
@@ -98,12 +97,6 @@ export function UserSelect() {
     // Reset input so same file can be selected again
     e.target.value = '';
   };
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
-  const getColor = (index: number) => AVATAR_COLORS[index % AVATAR_COLORS.length];
 
   if (isLoading) {
     return <div className="user-select loading">Loading...</div>;

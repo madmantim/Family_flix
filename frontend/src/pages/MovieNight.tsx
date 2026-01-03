@@ -10,11 +10,9 @@ import {
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { BottomNav } from '../components/BottomNav';
+import { TMDB_BASE_URL, getInitials, getColor, getAvatarUrl, parseGenres } from '../utils';
 import type { MatchedMovie, Movie } from '../types';
 import './MovieNight.css';
-
-const AVATAR_COLORS = ['#E53935', '#8E24AA', '#1E88E5', '#43A047', '#FB8C00', '#00ACC1', '#5E35B1'];
-const TMDB_BASE_URL = 'https://www.themoviedb.org/movie/';
 
 type Stage = 'select' | 'browse' | 'winner' | 'completion';
 
@@ -77,17 +75,6 @@ export function MovieNight() {
     );
   };
 
-  const getInitials = (name: string) =>
-    name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
-
-  const getColor = (index: number) => AVATAR_COLORS[index % AVATAR_COLORS.length];
-
-  const getAvatarUrl = (avatarPath: string | null) => {
-    if (!avatarPath) return null;
-    const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
-    return `${baseUrl}${avatarPath}`;
-  };
-
   const handleDragEnd = (_: never, info: PanInfo) => {
     const threshold = 100;
     if (info.offset.x < -threshold && currentIndex < matches.length - 1) {
@@ -108,15 +95,6 @@ export function MovieNight() {
 
   const openTmdb = (tmdbId: number) => {
     window.open(`${TMDB_BASE_URL}${tmdbId}`, '_blank', 'noopener,noreferrer');
-  };
-
-  const parseGenres = (genres: string | null): string[] => {
-    if (!genres) return [];
-    try {
-      return JSON.parse(genres);
-    } catch {
-      return [];
-    }
   };
 
   if (!memberId) {

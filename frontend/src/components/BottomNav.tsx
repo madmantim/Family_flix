@@ -3,9 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getMembers } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
+import { getInitials, getColor, getAvatarUrl } from '../utils';
 import './BottomNav.css';
-
-const AVATAR_COLORS = ['#E53935', '#8E24AA', '#1E88E5', '#43A047', '#FB8C00', '#00ACC1', '#5E35B1'];
 
 // Custom SVG Icons matching the app's aesthetic
 const SwipeIcon = ({ active }: { active: boolean }) => (
@@ -133,10 +132,6 @@ const UserSilhouetteIcon = () => (
   </svg>
 );
 
-const getInitials = (name: string) => {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-};
-
 interface NavItem {
   path: string;
   label: string;
@@ -185,11 +180,11 @@ export function BottomNav() {
         {currentMember ? (
           <div
             className="user-avatar"
-            style={{ backgroundColor: AVATAR_COLORS[memberIndex % AVATAR_COLORS.length] }}
+            style={{ backgroundColor: getColor(memberIndex) }}
           >
             {currentMember.avatar_url ? (
               <img
-                src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${currentMember.avatar_url}`}
+                src={getAvatarUrl(currentMember.avatar_url) || ''}
                 alt={currentMember.name}
               />
             ) : (
