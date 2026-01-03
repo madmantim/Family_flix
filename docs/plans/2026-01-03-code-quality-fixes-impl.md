@@ -46,7 +46,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
   - Log exception before raising HTTPException
   - Test: `pytest tests/test_avatar.py` must pass
 
-- [ ] **B6: Fix deprecated datetime.utcnow()**
+- [x] **B6: Fix deprecated datetime.utcnow()**
   - Files: `backend/app/models.py` (all occurrences)
   - Change `datetime.utcnow` to `lambda: datetime.now(timezone.utc)`
   - Add `from datetime import timezone` import

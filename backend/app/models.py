@@ -1,8 +1,13 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 from .database import Base
+
+
+def utc_now():
+    """Return current UTC time as timezone-aware datetime"""
+    return datetime.now(timezone.utc)
 
 
 class ContentRating(enum.Enum):
@@ -27,7 +32,7 @@ class Member(Base):
     name = Column(String(100), nullable=False, unique=True)
     avatar_url = Column(String(500), nullable=True)
     content_filter = Column(SQLEnum(ContentRating), default=ContentRating.ADULT)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     swipes = relationship("Swipe", back_populates="member")
     watchlist_additions = relationship("WatchlistEntry", back_populates="added_by")
@@ -54,8 +59,8 @@ class Movie(Base):
     rt_audience_score = Column(Integer, nullable=True)  # Rotten Tomatoes Audience Score (0-100)
     rt_url = Column(String(500), nullable=True)  # Link to RT page
     trailer_url = Column(String(500), nullable=True)  # YouTube trailer URL
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     swipes = relationship("Swipe", back_populates="movie")
     watchlist_entries = relationship("WatchlistEntry", back_populates="movie")
@@ -70,7 +75,7 @@ class WatchlistEntry(Base):
     movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False)
     added_by_id = Column(Integer, ForeignKey("members.id"), nullable=False)
     source = Column(String(50), default="manual")  # manual, curated, trending
-    added_at = Column(DateTime, default=datetime.utcnow)
+    added_at = Column(DateTime, default=utc_now)
     is_active = Column(Boolean, default=True)  # False when watched
 
     movie = relationship("Movie", back_populates="watchlist_entries")
@@ -85,7 +90,7 @@ class Swipe(Base):
     member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
     movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False)
     direction = Column(SQLEnum(SwipeDirection), nullable=False)
-    swiped_at = Column(DateTime, default=datetime.utcnow)
+    swiped_at = Column(DateTime, default=utc_now)
 
     member = relationship("Member", back_populates="swipes")
     movie = relationship("Movie", back_populates="swipes")
@@ -102,7 +107,7 @@ class MemberWatched(Base):
     id = Column(Integer, primary_key=True, index=True)
     member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
     movie_id = Column(Integer, ForeignKey("movies.id"), nullable=False)
-    watched_at = Column(DateTime, default=datetime.utcnow)
+    watched_at = Column(DateTime, default=utc_now)
 
     member = relationship("Member", back_populates="watched_movies")
     movie = relationship("Movie", back_populates="member_watched")
