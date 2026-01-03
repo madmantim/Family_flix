@@ -144,7 +144,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: '/swipe', label: 'Swipe', icon: SwipeIcon },
+  { path: '/swipe', label: 'Match', icon: SwipeIcon },
   { path: '/movie-night', label: 'Movie Night', icon: MovieNightIcon },
   { path: '/watchlist', label: 'Watchlist', icon: WatchlistIcon },
   { path: '/history', label: 'History', icon: HistoryIcon },
