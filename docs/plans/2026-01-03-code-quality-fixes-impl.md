@@ -35,7 +35,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
   - Return None or raise HTTPException with appropriate status codes
   - Test: `pytest tests/test_ratings_and_trailers.py` must pass
 
-- [ ] **B4: Add error handling wrapper for OMDb service**
+- [x] **B4: Add error handling wrapper for OMDb service**
   - File: `backend/app/services/omdb.py`
   - Same pattern as TMDB
   - Test: `pytest tests/test_ratings_and_trailers.py` must pass
