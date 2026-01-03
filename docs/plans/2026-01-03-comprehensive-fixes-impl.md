@@ -816,7 +816,7 @@ cd /Users/tim/Claude/Movie_picker && docker-compose config
 
 ---
 
-### [ ] P5-2: Add cache headers for static assets
+### [x] P5-2: Add cache headers for static assets
 
 **File:** `frontend/nginx.conf`
 
