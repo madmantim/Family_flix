@@ -716,7 +716,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ---
 
-### [ ] P4-3: Fix SQLAlchemy subquery deprecation warning
+### [x] P4-3: Fix SQLAlchemy subquery deprecation warning
 
 **File:** `backend/app/routers/swipes.py`
 **Line:** ~76
@@ -750,7 +750,7 @@ cd /Users/tim/Claude/Movie_picker/backend && source venv/bin/activate && pytest 
 
 ---
 
-### [ ] P4-4: Standardize test_watchlist.py to use shared fixtures
+### [x] P4-4: Standardize test_watchlist.py to use shared fixtures
 
 **File:** `backend/tests/test_watchlist.py`
 **Lines:** ~12-23

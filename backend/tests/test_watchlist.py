@@ -1,26 +1,9 @@
 """Tests for watchlist router"""
 import pytest
 from unittest.mock import AsyncMock
-from fastapi.testclient import TestClient
-from app.main import app
-from app.database import Base, engine, get_db
 from app.services.tmdb import get_tmdb_service, TMDBService
 from app.services.omdb import get_omdb_service, OMDbService
-from sqlalchemy.orm import sessionmaker
-
-
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
+from app.main import app
 
 
 def create_mock_tmdb_service():
@@ -50,23 +33,17 @@ def create_mock_omdb_service():
     return mock
 
 
-@pytest.fixture(autouse=True)
-def setup_database():
-    """Create tables before each test and drop after"""
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
-
-
 @pytest.fixture
-def client():
-    """Create test client with mocked external services"""
+def watchlist_client(client):
+    """Create test client with mocked external services for watchlist tests"""
     app.dependency_overrides[get_tmdb_service] = create_mock_tmdb_service
     app.dependency_overrides[get_omdb_service] = create_mock_omdb_service
-    yield TestClient(app)
-    # Clean up overrides
-    del app.dependency_overrides[get_tmdb_service]
-    del app.dependency_overrides[get_omdb_service]
+    yield client
+    # Clean up overrides (keep get_db override from conftest)
+    if get_tmdb_service in app.dependency_overrides:
+        del app.dependency_overrides[get_tmdb_service]
+    if get_omdb_service in app.dependency_overrides:
+        del app.dependency_overrides[get_omdb_service]
 
 
 def create_member(test_client, name="Test User"):
@@ -76,11 +53,11 @@ def create_member(test_client, name="Test User"):
     return response.json()
 
 
-def test_add_to_watchlist(client):
+def test_add_to_watchlist(watchlist_client):
     """Test adding a movie to the watchlist"""
-    member = create_member(client)
+    member = create_member(watchlist_client)
 
-    response = client.post("/api/watchlist/", json={
+    response = watchlist_client.post("/api/watchlist/", json={
         "tmdb_id": 12345,
         "added_by_id": member["id"],
         "source": "manual"
@@ -95,19 +72,19 @@ def test_add_to_watchlist(client):
     assert data["is_active"] is True
 
 
-def test_add_duplicate_to_watchlist(client):
+def test_add_duplicate_to_watchlist(watchlist_client):
     """Test that adding the same movie twice returns an error"""
-    member = create_member(client)
+    member = create_member(watchlist_client)
 
     # First add should succeed
-    response = client.post("/api/watchlist/", json={
+    response = watchlist_client.post("/api/watchlist/", json={
         "tmdb_id": 12345,
         "added_by_id": member["id"]
     })
     assert response.status_code == 201
 
     # Second add should fail
-    response = client.post("/api/watchlist/", json={
+    response = watchlist_client.post("/api/watchlist/", json={
         "tmdb_id": 12345,
         "added_by_id": member["id"]
     })
@@ -115,12 +92,12 @@ def test_add_duplicate_to_watchlist(client):
     assert "already in watchlist" in response.json()["detail"].lower()
 
 
-def test_remove_from_watchlist(client):
+def test_remove_from_watchlist(watchlist_client):
     """Test removing a movie from the watchlist (deactivates it)"""
-    member = create_member(client)
+    member = create_member(watchlist_client)
 
     # Add movie to watchlist
-    add_response = client.post("/api/watchlist/", json={
+    add_response = watchlist_client.post("/api/watchlist/", json={
         "tmdb_id": 12345,
         "added_by_id": member["id"]
     })
@@ -128,17 +105,17 @@ def test_remove_from_watchlist(client):
     entry_id = add_response.json()["id"]
 
     # Remove it
-    remove_response = client.delete(f"/api/watchlist/{entry_id}")
+    remove_response = watchlist_client.delete(f"/api/watchlist/{entry_id}")
     assert remove_response.status_code == 204
 
     # Verify it's no longer in active watchlist
-    list_response = client.get("/api/watchlist/")
+    list_response = watchlist_client.get("/api/watchlist/")
     assert list_response.status_code == 200
     assert len(list_response.json()) == 0
 
 
-def test_get_watchlist_empty(client):
+def test_get_watchlist_empty(watchlist_client):
     """Test getting an empty watchlist"""
-    response = client.get("/api/watchlist/")
+    response = watchlist_client.get("/api/watchlist/")
     assert response.status_code == 200
     assert response.json() == []
