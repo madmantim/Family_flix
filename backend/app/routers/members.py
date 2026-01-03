@@ -4,9 +4,12 @@ from typing import List
 from PIL import Image
 from io import BytesIO
 import os
+import logging
 from ..database import get_db
 from ..models import Member
 from ..schemas import MemberCreate, MemberResponse, MemberUpdate
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 AVATAR_SIZE = 256
@@ -117,6 +120,7 @@ async def upload_avatar(
         img.save(avatar_path, "JPEG", quality=85)
 
     except Exception as e:
+        logger.error("Failed to process avatar for member %d: %s", member_id, e)
         raise HTTPException(status_code=400, detail="Failed to process image.")
 
     # Update member's avatar_url

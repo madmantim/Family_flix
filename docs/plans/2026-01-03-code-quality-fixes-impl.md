@@ -40,7 +40,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
   - Same pattern as TMDB
   - Test: `pytest tests/test_ratings_and_trailers.py` must pass
 
-- [ ] **B5: Add logging to avatar upload error handling**
+- [x] **B5: Add logging to avatar upload error handling**
   - File: `backend/app/routers/members.py`
   - Add `import logging` and `logger = logging.getLogger(__name__)`
   - Log exception before raising HTTPException
