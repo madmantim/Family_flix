@@ -4,7 +4,7 @@ from typing import List
 from ..database import get_db
 from ..models import Swipe, Movie, Member, WatchlistEntry, SwipeDirection, MemberWatched
 from ..schemas import SwipeCreate, SwipeResponse, SwipeQueueResponse, MovieResponse
-from ..services.tmdb import TMDBService
+from ..utils import movie_to_response
 
 router = APIRouter()
 
@@ -87,29 +87,7 @@ def get_swipe_queue(member_id: int, limit: int = 20, db: Session = Depends(get_d
     movies = query.order_by(WatchlistEntry.added_at.desc()).limit(limit).all()
     total = query.count()
 
-    result = []
-    for movie in movies:
-        result.append({
-            "id": movie.id,
-            "tmdb_id": movie.tmdb_id,
-            "title": movie.title,
-            "year": movie.year,
-            "overview": movie.overview,
-            "poster_path": movie.poster_path,
-            "backdrop_path": movie.backdrop_path,
-            "vote_average": movie.vote_average,
-            "content_rating": movie.content_rating,
-            "runtime": movie.runtime,
-            "genres": movie.genres,
-            "imdb_id": movie.imdb_id,
-            "rt_critic_score": movie.rt_critic_score,
-            "rt_audience_score": movie.rt_audience_score,
-            "rt_url": movie.rt_url,
-            "trailer_url": movie.trailer_url,
-            "created_at": movie.created_at,
-            "poster_url": TMDBService.get_poster_url(movie.poster_path),
-            "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
-        })
+    result = [movie_to_response(movie) for movie in movies]
 
     return SwipeQueueResponse(movies=result, total_unswiped=total)
 

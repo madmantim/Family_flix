@@ -6,6 +6,7 @@ from ..database import get_db
 from ..models import Movie
 from ..schemas import MovieResponse, TMDBSearchResponse, TMDBSearchResult
 from ..services.tmdb import get_tmdb_service, TMDBService
+from ..utils import movie_to_response
 
 router = APIRouter()
 
@@ -120,48 +121,11 @@ def get_movie(movie_id: int, db: Session = Depends(get_db)):
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
 
-    from ..services.tmdb import TMDBService
-    movie_dict = {
-        "id": movie.id,
-        "tmdb_id": movie.tmdb_id,
-        "title": movie.title,
-        "year": movie.year,
-        "overview": movie.overview,
-        "poster_path": movie.poster_path,
-        "backdrop_path": movie.backdrop_path,
-        "vote_average": movie.vote_average,
-        "content_rating": movie.content_rating,
-        "runtime": movie.runtime,
-        "genres": movie.genres,
-        "created_at": movie.created_at,
-        "poster_url": TMDBService.get_poster_url(movie.poster_path),
-        "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
-    }
-    return movie_dict
+    return movie_to_response(movie)
 
 
 @router.get("/", response_model=List[MovieResponse])
 def get_all_movies(db: Session = Depends(get_db)):
     """Get all movies in the local database"""
     movies = db.query(Movie).all()
-    from ..services.tmdb import TMDBService
-
-    result = []
-    for movie in movies:
-        result.append({
-            "id": movie.id,
-            "tmdb_id": movie.tmdb_id,
-            "title": movie.title,
-            "year": movie.year,
-            "overview": movie.overview,
-            "poster_path": movie.poster_path,
-            "backdrop_path": movie.backdrop_path,
-            "vote_average": movie.vote_average,
-            "content_rating": movie.content_rating,
-            "runtime": movie.runtime,
-            "genres": movie.genres,
-            "created_at": movie.created_at,
-            "poster_url": TMDBService.get_poster_url(movie.poster_path),
-            "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
-        })
-    return result
+    return [movie_to_response(movie) for movie in movies]

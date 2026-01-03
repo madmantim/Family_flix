@@ -4,7 +4,7 @@ from typing import List
 from ..database import get_db
 from ..models import Movie, Member, Swipe, WatchlistEntry, SwipeDirection, ContentRating, MemberWatched
 from ..schemas import MovieNightRequest, MovieNightResponse, MatchedMovie
-from ..services.tmdb import TMDBService
+from ..utils import movie_to_response
 
 router = APIRouter()
 
@@ -111,29 +111,8 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
 
     result = []
     for m in matches:
-        movie = m["movie"]
         result.append(MatchedMovie(
-            movie={
-                "id": movie.id,
-                "tmdb_id": movie.tmdb_id,
-                "title": movie.title,
-                "year": movie.year,
-                "overview": movie.overview,
-                "poster_path": movie.poster_path,
-                "backdrop_path": movie.backdrop_path,
-                "vote_average": movie.vote_average,
-                "content_rating": movie.content_rating,
-                "runtime": movie.runtime,
-                "genres": movie.genres,
-                "imdb_id": movie.imdb_id,
-                "rt_critic_score": movie.rt_critic_score,
-                "rt_audience_score": movie.rt_audience_score,
-                "rt_url": movie.rt_url,
-                "trailer_url": movie.trailer_url,
-                "created_at": movie.created_at,
-                "poster_url": TMDBService.get_poster_url(movie.poster_path),
-                "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
-            },
+            movie=movie_to_response(m["movie"]),
             yes_votes=m["yes_votes"],
             total_present=m["total_present"],
             is_full_match=m["is_full_match"],

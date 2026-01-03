@@ -12,7 +12,7 @@ from ..schemas import (
     MarkWatchedRequest,
     MovieResponse,
 )
-from ..services.tmdb import TMDBService
+from ..utils import movie_to_response
 
 router = APIRouter()
 
@@ -52,30 +52,9 @@ def get_all_watched_history(
 
     result = []
     for w in entries:
-        movie = w.movie
         result.append({
             "id": w.id,
-            "movie": {
-                "id": movie.id,
-                "tmdb_id": movie.tmdb_id,
-                "title": movie.title,
-                "year": movie.year,
-                "overview": movie.overview,
-                "poster_path": movie.poster_path,
-                "backdrop_path": movie.backdrop_path,
-                "vote_average": movie.vote_average,
-                "content_rating": movie.content_rating,
-                "runtime": movie.runtime,
-                "genres": movie.genres,
-                "imdb_id": movie.imdb_id,
-                "rt_critic_score": movie.rt_critic_score,
-                "rt_audience_score": movie.rt_audience_score,
-                "rt_url": movie.rt_url,
-                "trailer_url": movie.trailer_url,
-                "created_at": movie.created_at,
-                "poster_url": TMDBService.get_poster_url(movie.poster_path),
-                "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path),
-            },
+            "movie": movie_to_response(w.movie),
             "watched_at": w.watched_at,
         })
 
@@ -190,30 +169,9 @@ def get_member_watched(member_id: int, limit: int = None, db: Session = Depends(
 
     result = []
     for w in watched:
-        movie = w.movie
         result.append({
             "id": w.id,
-            "movie": {
-                "id": movie.id,
-                "tmdb_id": movie.tmdb_id,
-                "title": movie.title,
-                "year": movie.year,
-                "overview": movie.overview,
-                "poster_path": movie.poster_path,
-                "backdrop_path": movie.backdrop_path,
-                "vote_average": movie.vote_average,
-                "content_rating": movie.content_rating,
-                "runtime": movie.runtime,
-                "genres": movie.genres,
-                "imdb_id": movie.imdb_id,
-                "rt_critic_score": movie.rt_critic_score,
-                "rt_audience_score": movie.rt_audience_score,
-                "rt_url": movie.rt_url,
-                "trailer_url": movie.trailer_url,
-                "created_at": movie.created_at,
-                "poster_url": TMDBService.get_poster_url(movie.poster_path),
-                "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path),
-            },
+            "movie": movie_to_response(w.movie),
             "watched_at": w.watched_at,
         })
 

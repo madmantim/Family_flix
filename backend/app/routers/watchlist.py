@@ -7,6 +7,7 @@ from ..models import Movie, WatchlistEntry, Member, ContentRating
 from ..schemas import WatchlistEntryCreate, WatchlistEntryResponse, MovieResponse
 from ..services.tmdb import get_tmdb_service, TMDBService
 from ..services.omdb import get_omdb_service, OMDbService
+from ..utils import movie_to_response
 
 router = APIRouter()
 
@@ -30,30 +31,9 @@ def get_watchlist(
 
     result = []
     for entry in entries:
-        movie = entry.movie
         result.append({
             "id": entry.id,
-            "movie": {
-                "id": movie.id,
-                "tmdb_id": movie.tmdb_id,
-                "title": movie.title,
-                "year": movie.year,
-                "overview": movie.overview,
-                "poster_path": movie.poster_path,
-                "backdrop_path": movie.backdrop_path,
-                "vote_average": movie.vote_average,
-                "content_rating": movie.content_rating,
-                "runtime": movie.runtime,
-                "genres": movie.genres,
-                "imdb_id": movie.imdb_id,
-                "rt_critic_score": movie.rt_critic_score,
-                "rt_audience_score": movie.rt_audience_score,
-                "rt_url": movie.rt_url,
-                "trailer_url": movie.trailer_url,
-                "created_at": movie.created_at,
-                "poster_url": TMDBService.get_poster_url(movie.poster_path),
-                "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
-            },
+            "movie": movie_to_response(entry.movie),
             "added_by": entry.added_by,
             "source": entry.source,
             "added_at": entry.added_at,
@@ -180,27 +160,7 @@ async def add_to_watchlist(
 
     return {
         "id": watchlist_entry.id,
-        "movie": {
-            "id": movie.id,
-            "tmdb_id": movie.tmdb_id,
-            "title": movie.title,
-            "year": movie.year,
-            "overview": movie.overview,
-            "poster_path": movie.poster_path,
-            "backdrop_path": movie.backdrop_path,
-            "vote_average": movie.vote_average,
-            "content_rating": movie.content_rating,
-            "runtime": movie.runtime,
-            "genres": movie.genres,
-            "imdb_id": movie.imdb_id,
-            "rt_critic_score": movie.rt_critic_score,
-            "rt_audience_score": movie.rt_audience_score,
-            "rt_url": movie.rt_url,
-            "trailer_url": movie.trailer_url,
-            "created_at": movie.created_at,
-            "poster_url": TMDBService.get_poster_url(movie.poster_path),
-            "backdrop_url": TMDBService.get_backdrop_url(movie.backdrop_path)
-        },
+        "movie": movie_to_response(movie),
         "added_by": member,
         "source": watchlist_entry.source,
         "added_at": watchlist_entry.added_at,

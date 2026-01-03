@@ -54,7 +54,7 @@ Track progress by checking items. **Do not mark complete until verified by tests
 
 ### Backend Low Priority
 
-- [ ] **B7: Extract movie serialization helper**
+- [x] **B7: Extract movie serialization helper**
   - Create: `backend/app/utils.py` with `movie_to_response(movie: Movie) -> dict`
   - Update routers to use helper: `movies.py`, `swipes.py`, `watchlist.py`, `movie_night.py`, `watched.py`
   - Test: All backend tests must pass
