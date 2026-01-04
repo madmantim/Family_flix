@@ -177,14 +177,26 @@ export function MovieNight() {
                   </div>
                 </div>
 
-                <div className="position-dots">
-                  {matches.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`dot ${i === currentIndex ? 'active' : ''}`}
-                      onClick={() => setCurrentIndex(i)}
+                <div
+                  className="progress-bar-container"
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const percentage = clickX / rect.width;
+                    const newIndex = Math.round(percentage * (matches.length - 1));
+                    setCurrentIndex(Math.max(0, Math.min(newIndex, matches.length - 1)));
+                  }}
+                >
+                  <div className="progress-bar-track">
+                    <div
+                      className="progress-bar-fill"
+                      style={{ width: `${((currentIndex + 1) / matches.length) * 100}%` }}
                     />
-                  ))}
+                    <div
+                      className="progress-bar-thumb"
+                      style={{ left: `${(currentIndex / Math.max(matches.length - 1, 1)) * 100}%` }}
+                    />
+                  </div>
                 </div>
 
                 <div className="browse-card-container">

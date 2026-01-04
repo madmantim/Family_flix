@@ -410,29 +410,41 @@
   font-size: 0.9rem;
 }
 
-.position-dots {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
-.position-dots .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+/* Progress bar */
+.progress-bar-container {
+  width: 100%;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
-.position-dots .dot.active {
+.progress-bar-track {
+  position: relative;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+.progress-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
   background: var(--color-brand);
-  transform: scale(1.2);
+  border-radius: 2px;
+  transition: width 0.15s ease-out;
 }
 
-.position-dots .dot:hover {
-  background: rgba(255, 255, 255, 0.5);
+.progress-bar-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: left 0.15s ease-out;
 }
 
 .browse-card-container {
