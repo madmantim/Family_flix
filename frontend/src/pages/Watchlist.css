@@ -488,14 +488,9 @@
   75% { transform: translateX(5px); }
 }
 
-/* Already in watchlist styling */
+/* Already in watchlist styling - tappable to view/edit */
 .search-result.in-watchlist {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.search-result.in-watchlist:hover {
-  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
 }
 
 .search-result .in-list-label {
@@ -504,8 +499,16 @@
   margin-top: 0.25rem;
 }
 
+/* Tick icon styled as tappable button */
 .search-result .add.added {
-  background: rgba(74, 222, 128, 0.1);
+  background: rgba(74, 222, 128, 0.15);
+  border: 1.5px solid rgba(74, 222, 128, 0.5);
   color: #4ade80;
   font-size: 1.25rem;
+  transition: all 0.2s;
+}
+
+.search-result.in-watchlist:hover .add.added {
+  background: rgba(74, 222, 128, 0.25);
+  border-color: #4ade80;
 }

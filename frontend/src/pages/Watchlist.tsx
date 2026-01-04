@@ -323,13 +323,22 @@ export function Watchlist() {
               <div className="search-results">
                 {searchResults.map((movie) => {
                   const isInWatchlist = watchlistTmdbIds.has(movie.tmdb_id);
+                  const watchlistEntry = isInWatchlist
+                    ? watchlist?.find(e => e.movie.tmdb_id === movie.tmdb_id)
+                    : null;
                   return (
                     <motion.div
                       key={movie.tmdb_id}
                       className={`search-result ${isInWatchlist ? 'in-watchlist' : ''}`}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      onClick={() => !isInWatchlist && addMutation.mutate(movie.tmdb_id)}
+                      onClick={() => {
+                        if (isInWatchlist && watchlistEntry) {
+                          setSelectedEntry(watchlistEntry);
+                        } else if (!isInWatchlist) {
+                          addMutation.mutate(movie.tmdb_id);
+                        }
+                      }}
                     >
                       <div
                         className="poster"
