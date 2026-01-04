@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func, case
+from datetime import datetime, timedelta, timezone
 from typing import List
 from ..database import get_db
 from ..models import Swipe, Movie, Member, WatchlistEntry, SwipeDirection, MemberWatched
 from ..schemas import SwipeCreate, SwipeResponse, SwipeQueueResponse, MovieResponse
 from ..utils import movie_to_response
+
+# Movies added within this many days are prioritized by recency
+RECENCY_WINDOW_DAYS = 14
 
 router = APIRouter()
 
@@ -63,7 +67,16 @@ def create_swipe(swipe: SwipeCreate, db: Session = Depends(get_db)):
 
 @router.get("/queue/{member_id}", response_model=SwipeQueueResponse)
 def get_swipe_queue(member_id: int, limit: int = 20, db: Session = Depends(get_db)):
-    """Get movies that member hasn't swiped on yet"""
+    """
+    Get movies that member hasn't swiped on yet.
+
+    Ordering priority:
+    1. Movies added within RECENCY_WINDOW_DAYS: sorted by recency (newest first)
+    2. Older movies: sorted by YES vote count (most popular first), then recency
+
+    This ensures new additions get visibility while popular older movies
+    don't get buried, and unpopular old movies naturally sink.
+    """
     member = db.query(Member).filter(Member.id == member_id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
@@ -73,10 +86,29 @@ def get_swipe_queue(member_id: int, limit: int = 20, db: Session = Depends(get_d
         Swipe.member_id == member_id
     ).scalar_subquery()
 
-    # Get active watchlist movies not yet swiped, filtered by content rating
-    query = db.query(Movie).join(WatchlistEntry).filter(
-        WatchlistEntry.is_active == True,
-        ~Movie.id.in_(swiped_subquery)
+    # Calculate the recency cutoff
+    recency_cutoff = datetime.now(timezone.utc) - timedelta(days=RECENCY_WINDOW_DAYS)
+
+    # Subquery to count YES votes per movie (excluding current member's votes)
+    yes_count_subquery = (
+        select(Swipe.movie_id, func.count(Swipe.id).label('yes_count'))
+        .where(
+            Swipe.direction == SwipeDirection.YES,
+            Swipe.member_id != member_id  # Don't count current member's own vote
+        )
+        .group_by(Swipe.movie_id)
+        .subquery()
+    )
+
+    # Build main query with YES count joined
+    query = (
+        db.query(Movie, WatchlistEntry.added_at, func.coalesce(yes_count_subquery.c.yes_count, 0).label('yes_count'))
+        .join(WatchlistEntry)
+        .outerjoin(yes_count_subquery, Movie.id == yes_count_subquery.c.movie_id)
+        .filter(
+            WatchlistEntry.is_active == True,
+            ~Movie.id.in_(swiped_subquery)
+        )
     )
 
     # Apply content filter based on member's setting
@@ -87,9 +119,46 @@ def get_swipe_queue(member_id: int, limit: int = 20, db: Session = Depends(get_d
         query = query.filter(Movie.content_rating == ContentRating.ALL_AGES)
     # MATURE and ADULT see everything
 
-    movies = query.order_by(WatchlistEntry.added_at.desc()).limit(limit).all()
-    total = query.count()
+    # Order by:
+    # 1. Recent movies first (is_recent = 1 for new, 0 for old)
+    # 2. Within recent: by added_at desc
+    # 3. Within old: by yes_count desc, then added_at desc
+    is_recent = case(
+        (WatchlistEntry.added_at >= recency_cutoff, 1),
+        else_=0
+    )
 
+    results = query.order_by(
+        is_recent.desc(),  # Recent movies first
+        case(
+            (WatchlistEntry.added_at >= recency_cutoff, WatchlistEntry.added_at),
+            else_=None
+        ).desc().nullslast(),  # Recent: sort by date
+        case(
+            (WatchlistEntry.added_at < recency_cutoff, func.coalesce(yes_count_subquery.c.yes_count, 0)),
+            else_=None
+        ).desc().nullslast(),  # Old: sort by yes_count
+        WatchlistEntry.added_at.desc()  # Final tiebreaker: recency
+    ).limit(limit).all()
+
+    # Get total count (need a simpler query for count)
+    count_query = (
+        db.query(func.count(Movie.id))
+        .join(WatchlistEntry)
+        .filter(
+            WatchlistEntry.is_active == True,
+            ~Movie.id.in_(swiped_subquery)
+        )
+    )
+    if member.content_filter == ContentRating.TEEN:
+        count_query = count_query.filter(Movie.content_rating.in_([ContentRating.ALL_AGES, ContentRating.TEEN]))
+    elif member.content_filter == ContentRating.ALL_AGES:
+        count_query = count_query.filter(Movie.content_rating == ContentRating.ALL_AGES)
+
+    total = count_query.scalar()
+
+    # Extract just the Movie objects for response
+    movies = [row[0] for row in results]
     result = [movie_to_response(movie) for movie in movies]
 
     return SwipeQueueResponse(movies=result, total_unswiped=total)
