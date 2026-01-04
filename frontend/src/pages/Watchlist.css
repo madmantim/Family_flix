@@ -494,21 +494,52 @@
 }
 
 .search-result .in-list-label {
-  color: #4ade80;
+  color: #888;
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
 
-/* Tick icon styled as tappable button */
-.search-result .add.added {
-  background: rgba(74, 222, 128, 0.15);
-  border: 1.5px solid rgba(74, 222, 128, 0.5);
-  color: #4ade80;
+/* Vote status icons - base styling */
+.search-result .add.voted-yes,
+.search-result .add.voted-no,
+.search-result .add.not-voted {
   font-size: 1.25rem;
   transition: all 0.2s;
+  border: 1.5px solid;
 }
 
-.search-result.in-watchlist:hover .add.added {
+/* Voted YES - heart icon (red/pink) */
+.search-result .add.voted-yes {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: rgba(244, 63, 94, 0.5);
+  color: #f43f5e;
+}
+
+.search-result.in-watchlist:hover .add.voted-yes {
+  background: rgba(244, 63, 94, 0.25);
+  border-color: #f43f5e;
+}
+
+/* Voted NO - cross icon (muted gray) */
+.search-result .add.voted-no {
+  background: rgba(156, 163, 175, 0.15);
+  border-color: rgba(156, 163, 175, 0.4);
+  color: #9ca3af;
+}
+
+.search-result.in-watchlist:hover .add.voted-no {
+  background: rgba(156, 163, 175, 0.25);
+  border-color: #9ca3af;
+}
+
+/* Not voted yet - tick icon (green/neutral) */
+.search-result .add.not-voted {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #4ade80;
+}
+
+.search-result.in-watchlist:hover .add.not-voted {
   background: rgba(74, 222, 128, 0.25);
   border-color: #4ade80;
 }

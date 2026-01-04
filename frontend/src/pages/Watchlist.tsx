@@ -326,6 +326,28 @@ export function Watchlist() {
                   const watchlistEntry = isInWatchlist
                     ? watchlist?.find(e => e.movie.tmdb_id === movie.tmdb_id)
                     : null;
+                  // Get user's vote status for this movie
+                  const userSwipe = watchlistEntry
+                    ? memberSwipes?.find(s => s.movie_id === watchlistEntry.movie.id)
+                    : null;
+                  const voteStatus = userSwipe?.direction; // 'yes' | 'no' | undefined
+
+                  // Determine icon and class based on vote status
+                  let statusIcon = '+';
+                  let statusClass = '';
+                  if (isInWatchlist) {
+                    if (voteStatus === 'yes') {
+                      statusIcon = '♥';
+                      statusClass = 'voted-yes';
+                    } else if (voteStatus === 'no') {
+                      statusIcon = '✕';
+                      statusClass = 'voted-no';
+                    } else {
+                      statusIcon = '✓';
+                      statusClass = 'not-voted';
+                    }
+                  }
+
                   return (
                     <motion.div
                       key={movie.tmdb_id}
@@ -351,10 +373,10 @@ export function Watchlist() {
                       <div className="info">
                         <div className="title">{movie.title}</div>
                         <div className="year">{movie.year}</div>
-                        {isInWatchlist && <div className="in-list-label">In Watchlist</div>}
+                        {isInWatchlist && <div className="in-list-label">Added</div>}
                       </div>
-                      <div className={`add ${isInWatchlist ? 'added' : ''}`}>
-                        {isInWatchlist ? '✓' : '+'}
+                      <div className={`add ${isInWatchlist ? statusClass : ''}`}>
+                        {statusIcon}
                       </div>
                     </motion.div>
                   );
