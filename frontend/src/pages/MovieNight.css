@@ -554,8 +554,8 @@
 }
 
 .browse-poster {
-  width: 140px;
-  height: 210px;
+  width: 182px;
+  height: 273px;
   background-size: cover;
   background-position: center;
   background-color: #2a2a3e;
@@ -752,10 +752,10 @@
 
 .synopsis {
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
