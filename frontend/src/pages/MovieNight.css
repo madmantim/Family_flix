@@ -732,7 +732,7 @@
   font-size: 0.95rem;
   line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 5;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -779,8 +779,10 @@
 .swipe-hint {
   color: #555;
   font-size: 0.8rem;
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
+  padding-bottom: 0.25rem;
   text-align: center;
+  flex-shrink: 0;
 }
 
 /* Empty filtered state */
