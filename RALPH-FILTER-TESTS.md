@@ -1,18 +1,27 @@
-# Ralph Loop: Movie Night Filter Testing
+# Ralph Loop: Movie Night Filter Testing (Chrome Extension)
 
 ## Mission
 
-Implement, run, and fix Playwright tests for the Movie Night filter feature until ALL tests pass. Work autonomously through the test cases defined in `docs/plans/movie-night-filter-tests.md`.
+Test the Movie Night filter feature using the Claude for Chrome browser extension. Work through all test cases until ALL pass, fixing any issues found in app code. Output `<promise>ALL TESTS PASSING</promise>` when complete.
+
+## Prerequisites
+
+Before starting:
+1. **Servers running:**
+   - Backend: `cd backend && source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+   - Frontend: `cd frontend && npm run dev`
+2. **Chrome extension connected** (run `/chrome` to verify)
+3. **Test data exists** (2+ family members, 5+ movies with varied metadata)
 
 ## State Tracking
 
-Use `tests/e2e/filter_test_state.json` to track progress:
+Track progress in `tests/e2e/filter_test_state.json`:
 ```json
 {
   "iteration": 1,
-  "tests_passed": [],
+  "tests_passed": ["TC-01", "TC-02"],
   "tests_failed": [],
-  "tests_remaining": ["TC-01", "TC-02", ...],
+  "tests_remaining": ["TC-03", ...],
   "last_error": null,
   "all_passed": false
 }
@@ -20,90 +29,125 @@ Use `tests/e2e/filter_test_state.json` to track progress:
 
 ## Each Iteration
 
-### 1. Check State
-- Read `tests/e2e/filter_test_state.json`
-- If `all_passed: true`, output `<promise>ALL TESTS PASSING</promise>` and exit
-- Otherwise, pick the next test from `tests_remaining` or retry a failed test
+### 1. Read State
+- Check `tests/e2e/filter_test_state.json`
+- If `all_passed: true` → output `<promise>ALL TESTS PASSING</promise>`
+- Otherwise pick next test from `tests_remaining`
 
-### 2. Implement/Fix Test
-- Create or update `tests/e2e/test_movie_night_filters.py`
-- Reference `docs/plans/movie-night-filter-tests.md` for test specs
-- Use the webapp-testing skill pattern:
-  ```python
-  from playwright.sync_api import sync_playwright
+### 2. Execute Test in Browser
 
-  with sync_playwright() as p:
-      browser = p.chromium.launch(headless=True)
-      page = browser.new_page()
-      page.goto('http://localhost:5173/movie-night')
-      page.wait_for_load_state('networkidle')
-      # ... test logic
-      browser.close()
-  ```
+Use Chrome extension to:
+1. Navigate to `http://localhost:5173/movie-night`
+2. Perform test steps (click, type, verify elements)
+3. Take screenshot if needed for verification
+4. Check console for errors
 
-### 3. Run Test
-```bash
-python scripts/with_server.py \
-  --server "cd backend && source venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000" --port 8000 \
-  --server "cd frontend && npm run dev" --port 5173 \
-  -- python tests/e2e/test_movie_night_filters.py
+**Example browser commands:**
+```
+Navigate to http://localhost:5173/movie-night
+Click on the first family member to select them
+Click the "Find Matches" button
+Verify the filter section is visible with chips labeled "< 2hrs", "🍅 70%+", "no 18+", "New"
+Take a screenshot
 ```
 
-### 4. Analyze Results
-- If PASSED: Move test to `tests_passed`, update state file
-- If FAILED:
-  - Capture error in `last_error`
-  - Fix the issue (could be test code OR app code)
-  - If app code changed, run `npm run lint` and `npm run build` to verify
-  - Keep test in `tests_remaining` for next iteration
+### 3. Analyze Results
+
+- **PASSED:** Element found, behavior correct, no console errors
+- **FAILED:** Element missing, wrong behavior, or console error
+
+### 4. Fix Issues
+
+If test fails:
+- Identify root cause (CSS selector? Logic bug? Missing element?)
+- Edit `frontend/src/pages/MovieNight.tsx` or `MovieNight.css`
+- Run `cd frontend && npm run lint && npm run build` to verify
+- Re-test in browser
 
 ### 5. Update State
-- Write updated state to `tests/e2e/filter_test_state.json`
-- If all 25 tests passed, set `all_passed: true`
+
+After each test:
+```bash
+# Update filter_test_state.json with results
+# If test passed, move to tests_passed
+# If failed and fixed, re-run
+# Git commit on progress
+git add -A && git commit -m "test: TC-XX verified - [description]"
+```
+
+## Test Cases Quick Reference
+
+See `docs/plans/movie-night-filter-tests.md` for full details.
+
+| ID | Test | Key Actions |
+|----|------|-------------|
+| TC-01 | Filter section renders | Navigate, select member, find matches, verify `.filter-section` |
+| TC-02 | Quick filter toggle | Click "< 2hrs" chip, verify `.active` class toggles |
+| TC-03 | Genre filter toggle | Click genre chip, verify active state |
+| TC-04 | Runtime filter logic | Activate "< 2hrs", verify only short movies shown |
+| TC-05 | RT score filter logic | Activate "🍅 70%+", verify scores >= 70 |
+| TC-06 | Content rating filter | Activate "no 18+", verify no adult movies |
+| TC-07 | New movies filter | Activate "New", verify recent releases only |
+| TC-08 | Genre OR logic | Select multiple genres, verify count increases |
+| TC-09 | Quick filter AND logic | Combine filters, verify count decreases |
+| TC-10 | Combined filters | Quick + genre, verify combined logic |
+| TC-11 | Empty filter results | Over-filter to 0 results, verify empty state |
+| TC-12 | Clear filters button | Click clear, verify all chips deactivated |
+| TC-13 | Position indicator | Verify "X of Y (Z)" format when filtered |
+| TC-14 | Progress bar | Verify bar reflects filtered count |
+| TC-15 | Index reset | Browse to movie #5, filter, verify reset to #1 |
+| TC-16 | Swipe with filters | Swipe through filtered results |
+| TC-17 | Watch This flow | Select filtered movie, complete flow |
+| TC-18 | Card layout | Verify side-by-side poster/info structure |
+| TC-19 | Icon buttons | Click trailer (▶) and info (ℹ) buttons |
+| TC-20 | Voter row | Verify avatars, labels display correctly |
+| TC-21 | Member selection | Verify selection still works (regression) |
+| TC-22 | Winner stage | Verify winner display (regression) |
+| TC-23 | Completion stage | Verify mark watched flow (regression) |
+| TC-24 | No genres | Verify genre row hidden if no genres |
+| TC-25 | Swipe hint | Verify hint shown only when >1 movie |
+
+## Browser Testing Pattern
+
+For each test:
+```
+1. Navigate to http://localhost:5173/movie-night
+2. [Setup] Select member(s), click Find Matches
+3. [Action] Perform test action (click filter, swipe, etc.)
+4. [Verify] Check element exists/state correct
+5. [Console] Check for JavaScript errors
+6. [Screenshot] Capture if needed for documentation
+```
+
+## Fixing App Issues
+
+If browser test reveals bug:
+1. Identify the issue from browser state/console
+2. Read relevant code:
+   - `frontend/src/pages/MovieNight.tsx` (logic)
+   - `frontend/src/pages/MovieNight.css` (styling)
+3. Make fix using Edit tool
+4. Run lint/build:
+   ```bash
+   cd frontend && npm run lint && npm run build
+   ```
+5. Re-test in browser
+
+## Completion
+
+When all 25 tests pass:
+1. Update state file with `all_passed: true`
+2. Final commit:
+   ```bash
+   git add -A && git commit -m "test: all 25 filter tests verified via Chrome extension"
+   ```
+3. Output: `<promise>ALL TESTS PASSING</promise>`
 
 ## Critical Rules
 
-1. **Never break existing functionality** - If you modify app code, run full lint/build check
-2. **Screenshot on failure** - Save to `/tmp/failure_tc_XX.png` for debugging
-3. **Incremental progress** - One test at a time, commit working tests
-4. **Git commits** - After each passing test or significant fix:
-   ```bash
-   git add -A && git commit -m "test(e2e): TC-XX passing - [description]"
-   ```
-
-## Test Prerequisites
-
-Before first test run, ensure test data exists:
-- At least 2 family members in database
-- At least 5 movies in watchlist with varied:
-  - Runtimes (mix of <120 and >=120 min)
-  - RT scores (mix of >=70%, <70%, and null)
-  - Content ratings (all_ages, teen, mature, adult)
-  - Years (some 2025-2026, some older)
-  - Genres (at least 3 different genres)
-
-If data is missing, seed it via API calls first.
-
-## Completion Signal
-
-When ALL 25 tests pass:
-```
-<promise>ALL TESTS PASSING</promise>
-```
-
-## Files Reference
-
-| File | Purpose |
-|------|---------|
-| `docs/plans/movie-night-filter-tests.md` | Full test specifications |
-| `tests/e2e/test_movie_night_filters.py` | Test implementation |
-| `tests/e2e/filter_test_state.json` | Progress tracking |
-| `frontend/src/pages/MovieNight.tsx` | Component under test |
-| `frontend/src/pages/MovieNight.css` | Styles under test |
-
-## Debugging Tips
-
-- If element not found: wait for `networkidle`, take screenshot, inspect selectors
-- If filter logic wrong: check `filteredMatches` computation in MovieNight.tsx
-- If layout broken: check CSS classes match between TSX and CSS
-- If servers won't start: check ports 8000/5173 not already in use
+1. **One test at a time** - Complete each test before moving on
+2. **Screenshot failures** - Document issues visually
+3. **Check console** - Look for JS errors after each action
+4. **Verify fixes** - Always re-run lint/build after code changes
+5. **Commit progress** - Git commit after each verified test
+6. **No regressions** - Tests TC-21 through TC-23 verify existing functionality
