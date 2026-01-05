@@ -374,6 +374,13 @@ export function MovieNight() {
                                       <span className="tmdb-score">TMDB {(filteredMatches[currentIndex].movie.vote_average / 10).toFixed(1)}</span>
                                     )}
                                   </div>
+                                  {filteredMatches[currentIndex].movie.genres && (
+                                    <div className="meta-genres">
+                                      {parseGenres(filteredMatches[currentIndex].movie.genres).slice(0, 3).map((g) => (
+                                        <span key={g} className="meta-genre">{g}</span>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div className="icon-buttons">
@@ -399,6 +406,7 @@ export function MovieNight() {
 
                             {/* Voter row */}
                             <div className="voter-row">
+                              <span className="voter-section-label">Votes</span>
                               <span className="voter-icon">
                                 {filteredMatches[currentIndex].is_full_match ? '✓' : '👍'}
                               </span>
@@ -424,22 +432,15 @@ export function MovieNight() {
                                 <span className="voter-label everyone">Everyone!</span>
                               ) : (
                                 <span className="voter-label">
-                                  {filteredMatches[currentIndex].yes_votes}/{filteredMatches[currentIndex].total_present} voted yes
+                                  {filteredMatches[currentIndex].yes_votes}/{filteredMatches[currentIndex].total_present} yes
                                 </span>
                               )}
                             </div>
 
-                            {/* Synopsis + genres */}
+                            {/* Synopsis */}
                             <div className="browse-card-bottom">
                               {filteredMatches[currentIndex].movie.overview && (
                                 <p className="synopsis">{filteredMatches[currentIndex].movie.overview}</p>
-                              )}
-                              {filteredMatches[currentIndex].movie.genres && (
-                                <div className="genres">
-                                  {parseGenres(filteredMatches[currentIndex].movie.genres).slice(0, 4).map((g) => (
-                                    <span key={g} className="genre">{g}</span>
-                                  ))}
-                                </div>
                               )}
                             </div>
 
