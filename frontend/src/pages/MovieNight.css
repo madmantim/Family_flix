@@ -536,7 +536,7 @@
   max-width: 400px;
   background: var(--card-bg);
   border-radius: var(--card-radius);
-  padding: 1rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   cursor: grab;
@@ -555,8 +555,8 @@
 }
 
 .browse-poster {
-  width: 120px;
-  height: 180px;
+  width: 160px;
+  height: 240px;
   background-size: cover;
   background-position: center;
   background-color: #2a2a3e;
@@ -575,7 +575,7 @@
 .browse-info h2 {
   color: #fff;
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.25;
   display: -webkit-box;
@@ -729,10 +729,10 @@
 
 .synopsis {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: 0.95rem;
+  line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
