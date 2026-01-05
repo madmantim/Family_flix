@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import {
@@ -14,6 +14,14 @@ import './MovieNight.css';
 
 type Stage = 'select' | 'browse' | 'winner' | 'completion';
 
+// Quick filter definitions
+const QUICK_FILTERS = [
+  { id: '< 2hrs', label: '< 2hrs' },
+  { id: '🍅 70%+', label: '🍅 70%+' },
+  { id: 'no 18+', label: 'no 18+' },
+  { id: 'New', label: 'New' },
+] as const;
+
 export function MovieNight() {
   const [stage, setStage] = useState<Stage>('select');
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
@@ -21,6 +29,10 @@ export function MovieNight() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [result, setResult] = useState<Movie | null>(null);
   const [selectedWatchers, setSelectedWatchers] = useState<number[]>([]);
+
+  // Filter state
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const [selectedGenres, setSelectedGenres] = useState<Set<string>>(new Set());
 
   const { data: members } = useQuery({
     queryKey: ['members'],
@@ -59,11 +71,78 @@ export function MovieNight() {
       setMatches([]);
       setResult(null);
       setCurrentIndex(0);
+      setActiveFilters(new Set());
+      setSelectedGenres(new Set());
     },
     onError: (error) => {
       console.error('Failed to mark watched:', error);
     },
   });
+
+  // Extract unique genres from unfiltered matches
+  const availableGenres = useMemo(() => {
+    const genres = new Set<string>();
+    matches.forEach((m) => {
+      parseGenres(m.movie.genres).forEach((g) => genres.add(g));
+    });
+    return Array.from(genres).sort();
+  }, [matches]);
+
+  // Apply filters to matches
+  const filteredMatches = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return matches.filter((m) => {
+      const movie = m.movie;
+
+      // Quick filters (AND logic)
+      if (activeFilters.has('< 2hrs') && (movie.runtime == null || movie.runtime >= 120)) return false;
+      if (activeFilters.has('🍅 70%+') && (movie.rt_critic_score == null || movie.rt_critic_score < 70)) return false;
+      if (activeFilters.has('no 18+') && movie.content_rating === 'adult') return false;
+      if (activeFilters.has('New') && (movie.year == null || movie.year < currentYear - 1)) return false;
+
+      // Genre filters (OR logic)
+      if (selectedGenres.size > 0) {
+        const movieGenres = parseGenres(movie.genres);
+        if (!movieGenres.some((g) => selectedGenres.has(g))) return false;
+      }
+
+      return true;
+    });
+  }, [matches, activeFilters, selectedGenres]);
+
+  const toggleFilter = (filterId: string) => {
+    setActiveFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(filterId)) {
+        next.delete(filterId);
+      } else {
+        next.add(filterId);
+      }
+      return next;
+    });
+    setCurrentIndex(0); // Reset to first result when filter changes
+  };
+
+  const toggleGenre = (genre: string) => {
+    setSelectedGenres((prev) => {
+      const next = new Set(prev);
+      if (next.has(genre)) {
+        next.delete(genre);
+      } else {
+        next.add(genre);
+      }
+      return next;
+    });
+    setCurrentIndex(0); // Reset to first result when filter changes
+  };
+
+  const clearFilters = () => {
+    setActiveFilters(new Set());
+    setSelectedGenres(new Set());
+    setCurrentIndex(0);
+  };
+
+  const hasActiveFilters = activeFilters.size > 0 || selectedGenres.size > 0;
 
   const toggleMember = (id: number) => {
     setSelectedMembers((prev) =>
@@ -79,7 +158,7 @@ export function MovieNight() {
 
   const handleDragEnd = (_: never, info: PanInfo) => {
     const threshold = 100;
-    if (info.offset.x < -threshold && currentIndex < matches.length - 1) {
+    if (info.offset.x < -threshold && currentIndex < filteredMatches.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else if (info.offset.x > threshold && currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1);
@@ -173,76 +252,164 @@ export function MovieNight() {
                 <div className="browse-header">
                   <h1>Pick a Movie</h1>
                   <div className="position-indicator">
-                    {currentIndex + 1} of {matches.length}
+                    {filteredMatches.length > 0 ? (
+                      hasActiveFilters ? (
+                        <><span className="filtered">{currentIndex + 1} of {filteredMatches.length}</span> ({matches.length})</>
+                      ) : (
+                        <>{currentIndex + 1} of {matches.length}</>
+                      )
+                    ) : (
+                      <>0 of {matches.length}</>
+                    )}
                   </div>
                 </div>
 
                 <div
                   className="progress-bar-container"
                   onClick={(e) => {
+                    if (filteredMatches.length === 0) return;
                     const rect = e.currentTarget.getBoundingClientRect();
                     const clickX = e.clientX - rect.left;
                     const percentage = clickX / rect.width;
-                    const newIndex = Math.round(percentage * (matches.length - 1));
-                    setCurrentIndex(Math.max(0, Math.min(newIndex, matches.length - 1)));
+                    const newIndex = Math.round(percentage * (filteredMatches.length - 1));
+                    setCurrentIndex(Math.max(0, Math.min(newIndex, filteredMatches.length - 1)));
                   }}
                 >
                   <div className="progress-bar-track">
                     <div
                       className="progress-bar-fill"
-                      style={{ width: `${((currentIndex + 1) / matches.length) * 100}%` }}
+                      style={{ width: filteredMatches.length > 0 ? `${((currentIndex + 1) / filteredMatches.length) * 100}%` : '0%' }}
                     />
                     <div
                       className="progress-bar-thumb"
-                      style={{ left: `${(currentIndex / Math.max(matches.length - 1, 1)) * 100}%` }}
+                      style={{ left: filteredMatches.length > 1 ? `${(currentIndex / (filteredMatches.length - 1)) * 100}%` : '0%' }}
                     />
                   </div>
                 </div>
 
+                {/* Filter Chips */}
+                <div className="filter-section">
+                  <div className="filter-row">
+                    {QUICK_FILTERS.map((filter) => (
+                      <button
+                        key={filter.id}
+                        className={`filter-chip ${activeFilters.has(filter.id) ? 'active' : ''}`}
+                        onClick={() => toggleFilter(filter.id)}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+                  {availableGenres.length > 0 && (
+                    <div className="filter-row genres">
+                      {availableGenres.map((genre) => (
+                        <button
+                          key={genre}
+                          className={`filter-chip genre-chip ${selectedGenres.has(genre) ? 'active' : ''}`}
+                          onClick={() => toggleGenre(genre)}
+                        >
+                          {genre}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="browse-card-container">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentIndex}
-                      className="browse-card"
-                      initial={{ opacity: 0, x: 50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -50 }}
-                      drag="x"
-                      dragConstraints={{ left: 0, right: 0 }}
-                      dragElastic={0.2}
-                      onDragEnd={handleDragEnd}
-                    >
-                      {matches[currentIndex] && (
-                        <>
-                          <div
-                            className="browse-poster"
-                            style={{
-                              backgroundImage: matches[currentIndex].movie.poster_url
-                                ? `url(${matches[currentIndex].movie.poster_url})`
-                                : undefined,
-                            }}
-                          />
+                  {filteredMatches.length === 0 ? (
+                    <div className="empty-filtered">
+                      <p>No movies match these filters</p>
+                      <button className="clear-filters-btn" onClick={clearFilters}>
+                        Clear Filters
+                      </button>
+                    </div>
+                  ) : (
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentIndex}
+                        className="browse-card"
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -50 }}
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.2}
+                        onDragEnd={handleDragEnd}
+                      >
+                        {filteredMatches[currentIndex] && (
+                          <>
+                            {/* Top section: Poster + Info side by side */}
+                            <div className="browse-card-top">
+                              <div
+                                className="browse-poster"
+                                style={{
+                                  backgroundImage: filteredMatches[currentIndex].movie.poster_url
+                                    ? `url(${filteredMatches[currentIndex].movie.poster_url})`
+                                    : undefined,
+                                }}
+                              />
 
-                          <div className="browse-info">
-                            <h2>
-                              {matches[currentIndex].movie.title}
-                              {matches[currentIndex].movie.year && (
-                                <span className="year"> ({matches[currentIndex].movie.year})</span>
-                              )}
-                            </h2>
+                              <div className="browse-info">
+                                <h2>
+                                  {filteredMatches[currentIndex].movie.title}
+                                  {filteredMatches[currentIndex].movie.year && (
+                                    <span className="year"> ({filteredMatches[currentIndex].movie.year})</span>
+                                  )}
+                                </h2>
 
-                            <div className="voter-stack">
+                                <div className="meta-stack">
+                                  <div className="meta-line">
+                                    {filteredMatches[currentIndex].movie.content_rating && (
+                                      <span className="rating-badge">{formatContentRating(filteredMatches[currentIndex].movie.content_rating)}</span>
+                                    )}
+                                    {filteredMatches[currentIndex].movie.runtime && (
+                                      <span>{filteredMatches[currentIndex].movie.runtime} min</span>
+                                    )}
+                                  </div>
+                                  <div className="meta-line">
+                                    {filteredMatches[currentIndex].movie.rt_critic_score && (
+                                      <span className="rt-score">🍅 {filteredMatches[currentIndex].movie.rt_critic_score}%</span>
+                                    )}
+                                    {filteredMatches[currentIndex].movie.vote_average && (
+                                      <span className="tmdb-score">TMDB {(filteredMatches[currentIndex].movie.vote_average / 10).toFixed(1)}</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="icon-buttons">
+                                  {filteredMatches[currentIndex].movie.trailer_url && (
+                                    <button
+                                      className="icon-btn trailer"
+                                      onClick={() => openTrailer(filteredMatches[currentIndex].movie.trailer_url!)}
+                                      title="Watch Trailer"
+                                    >
+                                      ▶
+                                    </button>
+                                  )}
+                                  <button
+                                    className="icon-btn"
+                                    onClick={() => openTmdb(filteredMatches[currentIndex].movie.tmdb_id)}
+                                    title="More Info"
+                                  >
+                                    ℹ
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Voter row */}
+                            <div className="voter-row">
                               <span className="voter-icon">
-                                {matches[currentIndex].is_full_match ? '✓' : '👍'}
+                                {filteredMatches[currentIndex].is_full_match ? '✓' : '👍'}
                               </span>
                               <div className="voter-avatars">
-                                {matches[currentIndex].voters.map((voter, idx) => (
+                                {filteredMatches[currentIndex].voters.map((voter, idx) => (
                                   <span
                                     key={voter.id}
                                     className="voter-avatar"
                                     style={{
                                       backgroundColor: getColor(idx),
-                                      zIndex: matches[currentIndex].voters.length - idx
+                                      zIndex: filteredMatches[currentIndex].voters.length - idx
                                     }}
                                   >
                                     {voter.avatar_url ? (
@@ -253,83 +420,48 @@ export function MovieNight() {
                                   </span>
                                 ))}
                               </div>
-                              {matches[currentIndex].is_full_match ? (
+                              {filteredMatches[currentIndex].is_full_match ? (
                                 <span className="voter-label everyone">Everyone!</span>
                               ) : (
                                 <span className="voter-label">
-                                  ({matches[currentIndex].yes_votes}/{matches[currentIndex].total_present})
+                                  {filteredMatches[currentIndex].yes_votes}/{filteredMatches[currentIndex].total_present} voted yes
                                 </span>
                               )}
                             </div>
 
-                            <div className="meta-row">
-                              {matches[currentIndex].movie.content_rating && (
-                                <span className="meta-item">{formatContentRating(matches[currentIndex].movie.content_rating)}</span>
+                            {/* Synopsis + genres */}
+                            <div className="browse-card-bottom">
+                              {filteredMatches[currentIndex].movie.overview && (
+                                <p className="synopsis">{filteredMatches[currentIndex].movie.overview}</p>
                               )}
-                              {matches[currentIndex].movie.runtime && (
-                                <span className="meta-item">{matches[currentIndex].movie.runtime} min</span>
-                              )}
-                              {matches[currentIndex].movie.vote_average && (
-                                <span className="meta-item">TMDB {(matches[currentIndex].movie.vote_average / 10).toFixed(1)}</span>
-                              )}
-                              {matches[currentIndex].movie.rt_critic_score && (
-                                <span className="rt-score critic">
-                                  🍅 {matches[currentIndex].movie.rt_critic_score}%
-                                </span>
+                              {filteredMatches[currentIndex].movie.genres && (
+                                <div className="genres">
+                                  {parseGenres(filteredMatches[currentIndex].movie.genres).slice(0, 4).map((g) => (
+                                    <span key={g} className="genre">{g}</span>
+                                  ))}
+                                </div>
                               )}
                             </div>
 
-                            {matches[currentIndex].movie.genres && (
-                              <div className="genres">
-                                {parseGenres(matches[currentIndex].movie.genres).slice(0, 3).map((g) => (
-                                  <span key={g} className="genre">{g}</span>
-                                ))}
-                              </div>
-                            )}
-
-                            {matches[currentIndex].movie.overview && (
-                              <p className="synopsis">{matches[currentIndex].movie.overview}</p>
-                            )}
-                          </div>
-
-                          <div className="browse-actions">
-                            <div className="action-buttons-row">
-                              {matches[currentIndex].movie.trailer_url && (
-                                <motion.button
-                                  className="btn-secondary"
-                                  onClick={() => openTrailer(matches[currentIndex].movie.trailer_url!)}
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
-                                >
-                                  ▶ Trailer
-                                </motion.button>
-                              )}
+                            {/* Watch This CTA */}
+                            <div className="browse-actions">
                               <motion.button
-                                className="btn-secondary"
-                                onClick={() => openTmdb(matches[currentIndex].movie.tmdb_id)}
+                                className="watch-this-btn"
+                                onClick={() => handleWatchThis(filteredMatches[currentIndex].movie)}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                               >
-                                More
+                                Watch This
                               </motion.button>
                             </div>
-
-                            <motion.button
-                              className="watch-this-btn"
-                              onClick={() => handleWatchThis(matches[currentIndex].movie)}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              Watch This
-                            </motion.button>
-                          </div>
-                        </>
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
+                          </>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                  )}
                 </div>
 
-                <p className="swipe-hint">← swipe to browse →</p>
+                {filteredMatches.length > 1 && <p className="swipe-hint">← swipe to browse →</p>}
               </>
             )}
           </motion.div>

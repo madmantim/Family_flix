@@ -1,5 +1,7 @@
 # Movie Night Filters Design
 
+**Status:** Implemented (2026-01-05)
+
 ## Overview
 
 Add client-side filtering to the Movie Night browse stage, allowing users to narrow down matched movies using quick filters and genre selection.
