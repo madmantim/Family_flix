@@ -20,6 +20,7 @@ const QUICK_FILTERS = [
   { id: '🍅 70%+', label: '🍅 70%+' },
   { id: 'no 18+', label: 'no 18+' },
   { id: 'New', label: 'New' },
+  { id: 'Just Us', label: 'Just Us' },
 ] as const;
 
 export function MovieNight() {
@@ -99,6 +100,7 @@ export function MovieNight() {
       if (activeFilters.has('🍅 70%+') && (movie.rt_critic_score == null || movie.rt_critic_score < 70)) return false;
       if (activeFilters.has('no 18+') && movie.content_rating === 'adult') return false;
       if (activeFilters.has('New') && (movie.year == null || movie.year < currentYear - 1)) return false;
+      if (activeFilters.has('Just Us') && m.absent_yes_voters.length > 0) return false;
 
       // Genre filters (OR logic)
       if (selectedGenres.size > 0) {
@@ -417,7 +419,23 @@ export function MovieNight() {
                                     className="voter-avatar"
                                     style={{
                                       backgroundColor: getColor(idx),
-                                      zIndex: filteredMatches[currentIndex].voters.length - idx
+                                      zIndex: filteredMatches[currentIndex].voters.length + filteredMatches[currentIndex].absent_yes_voters.length - idx
+                                    }}
+                                  >
+                                    {voter.avatar_url ? (
+                                      <img src={getAvatarUrl(voter.avatar_url)!} alt={voter.name} />
+                                    ) : (
+                                      getInitials(voter.name)
+                                    )}
+                                  </span>
+                                ))}
+                                {filteredMatches[currentIndex].absent_yes_voters.map((voter, idx) => (
+                                  <span
+                                    key={voter.id}
+                                    className="voter-avatar absent"
+                                    style={{
+                                      backgroundColor: getColor(filteredMatches[currentIndex].voters.length + idx),
+                                      zIndex: filteredMatches[currentIndex].absent_yes_voters.length - idx
                                     }}
                                   >
                                     {voter.avatar_url ? (

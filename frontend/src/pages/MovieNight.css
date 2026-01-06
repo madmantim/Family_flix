@@ -735,6 +735,10 @@
   object-fit: cover;
 }
 
+.voter-avatar.absent {
+  opacity: 0.4;
+}
+
 .voter-label {
   color: var(--color-text-muted);
   font-size: 0.8rem;

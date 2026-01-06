@@ -30,6 +30,11 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
     member_ids = request.present_member_ids
     members_by_id = {m.id: m for m in members}
 
+    # Get all members to identify absent ones
+    all_members = db.query(Member).all()
+    absent_member_ids = [m.id for m in all_members if m.id not in member_ids]
+    absent_members_by_id = {m.id: m for m in all_members if m.id in absent_member_ids}
+
     # Determine the most restrictive content filter for present members
     content_filters = [m.content_filter for m in members]
     filter_order = [ContentRating.ALL_AGES, ContentRating.TEEN, ContentRating.MATURE, ContentRating.ADULT]
@@ -64,6 +69,20 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
             yes_by_movie[swipe.movie_id] = set()
         yes_by_movie[swipe.movie_id].add(swipe.member_id)
 
+    # Batch-load YES swipes from absent members for filtered movies
+    absent_yes_swipes = db.query(Swipe).filter(
+        Swipe.movie_id.in_(filtered_movie_ids),
+        Swipe.member_id.in_(absent_member_ids),
+        Swipe.direction == SwipeDirection.YES
+    ).all() if filtered_movie_ids and absent_member_ids else []
+
+    # Build lookup: movie_id -> set of absent member_ids who voted YES
+    absent_yes_by_movie = {}
+    for swipe in absent_yes_swipes:
+        if swipe.movie_id not in absent_yes_by_movie:
+            absent_yes_by_movie[swipe.movie_id] = set()
+        absent_yes_by_movie[swipe.movie_id].add(swipe.member_id)
+
     # Batch-load all watched records for present members
     all_watched = db.query(MemberWatched).filter(
         MemberWatched.movie_id.in_(filtered_movie_ids),
@@ -85,6 +104,10 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
         yes_voters = [members_by_id[mid] for mid in yes_member_ids if mid in members_by_id]
         y_count = len(yes_member_ids)
 
+        # Get yes swipes from absent members
+        absent_yes_member_ids = absent_yes_by_movie.get(movie.id, set())
+        absent_yes_voters = [absent_members_by_id[mid] for mid in absent_yes_member_ids if mid in absent_members_by_id]
+
         # Count N(W) - members who voted NO (or didn't vote YES) AND have watched
         watched_member_ids = watched_by_movie.get(movie.id, set())
         n_watched_count = sum(1 for mid in member_ids if mid not in yes_member_ids and mid in watched_member_ids)
@@ -99,7 +122,8 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
             "is_full_match": y_count == len(member_ids),
             "n_watched_count": n_watched_count,
             "added_at": entry.added_at if entry else None,
-            "voters": yes_voters
+            "voters": yes_voters,
+            "absent_yes_voters": absent_yes_voters
         })
 
     # Sort: Y count desc, N(W) count asc, recency desc
@@ -122,7 +146,14 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
                 "avatar_url": v.avatar_url,
                 "content_filter": v.content_filter,
                 "created_at": v.created_at
-            } for v in m["voters"]]
+            } for v in m["voters"]],
+            absent_yes_voters=[{
+                "id": v.id,
+                "name": v.name,
+                "avatar_url": v.avatar_url,
+                "content_filter": v.content_filter,
+                "created_at": v.created_at
+            } for v in m["absent_yes_voters"]]
         ))
 
     return MovieNightResponse(

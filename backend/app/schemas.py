@@ -107,6 +107,7 @@ class MatchedMovie(BaseModel):
     total_present: int
     is_full_match: bool
     voters: List[MemberResponse]
+    absent_yes_voters: List[MemberResponse] = []
 
 
 class MovieNightResponse(BaseModel):
