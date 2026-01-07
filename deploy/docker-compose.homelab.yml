@@ -1,9 +1,11 @@
 # Family Flix Picker - Homelab Production Deployment
 # Deploy to: mediastack-as LXC (103) at /opt/familyflix
-# Access via: http://mediastack-as.bone-egret.ts.net:8088
+# Access via:
+#   - Tailscale: http://mediastack-as.bone-egret.ts.net:8088
+#   - Public:    https://flix.andofam.com (via Cloudflare Tunnel)
 #
 # This configuration exposes port 8088 on the host for Tailscale access.
-# No Tailscale sidecar needed - uses existing mediastack Tailscale identity.
+# Cloudflare Tunnel provides public access with Cloudflare Access authentication.
 
 services:
   backend:
@@ -42,6 +44,16 @@ services:
         condition: service_healthy
     networks:
       - familyflix
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: familyflix-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - familyflix
+    depends_on:
+      - frontend
 
 networks:
   familyflix:

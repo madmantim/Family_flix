@@ -4,6 +4,12 @@ Deploy to Arthur's Seat homelab (mediastack-as LXC 103).
 
 ## Access
 
+### Public Access (via Cloudflare Tunnel)
+- **URL**: `https://flix.andofam.com`
+- **Authentication**: Cloudflare Access (email OTP)
+- **Allowed**: Family email domains (@andersonfamily.name, @andofam.com, @tjando.com)
+
+### Internal Access (via Tailscale)
 - **URL**: `http://mediastack-as.bone-egret.ts.net:8088`
 - **Requires**: Tailscale connection to bone-egret tailnet
 
@@ -78,27 +84,33 @@ Create `.env` in `/opt/familyflix/` with:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│ Family devices (Tailscale)                          │
-│         │                                           │
-│         ▼                                           │
-│ mediastack-as.bone-egret.ts.net:8088                │
-│         │                                           │
-│         ▼                                           │
-│ ┌─────────────────────────────────────────────────┐ │
-│ │ LXC 103 (mediastack-as)                         │ │
-│ │                                                 │ │
-│ │  ┌──────────────┐     ┌──────────────────────┐  │ │
-│ │  │  frontend    │────▶│     backend          │  │ │
-│ │  │  (Nginx:80)  │     │  (FastAPI:8000)      │  │ │
-│ │  │   :8088      │     │                      │  │ │
-│ │  └──────────────┘     └──────────────────────┘  │ │
-│ │         ▲                     │                 │ │
-│ │         │                     ▼                 │ │
-│ │         │              familyflix-data          │ │
-│ │         │              familyflix-static        │ │
-│ └─────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Access Methods                            │
+├─────────────────────────────┬───────────────────────────────┤
+│  Public (Cloudflare Tunnel) │  Internal (Tailscale)         │
+│  https://flix.andofam.com   │  http://mediastack-as:8088    │
+│         │                   │           │                   │
+│         ▼                   │           │                   │
+│  ┌─────────────────┐        │           │                   │
+│  │ Cloudflare Edge │        │           │                   │
+│  │ Access Auth     │        │           │                   │
+│  └────────┬────────┘        │           │                   │
+│           │                 │           │                   │
+└───────────┼─────────────────┴───────────┼───────────────────┘
+            │                             │
+            ▼                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│ LXC 103 (mediastack-as)                                      │
+│                                                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │
+│  │ cloudflared  │  │  frontend    │──│     backend      │   │
+│  │ (tunnel)     │──│  (Nginx:80)  │  │  (FastAPI:8000)  │   │
+│  └──────────────┘  │   :8088      │  │                  │   │
+│                    └──────────────┘  └──────────────────┘   │
+│                           │                  │               │
+│                           ▼                  ▼               │
+│                    familyflix-data    familyflix-static      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Container Management
@@ -112,6 +124,7 @@ View logs:
 ```bash
 ssh root@100.115.142.20 'pct exec 103 -- docker logs -f familyflix-backend'
 ssh root@100.115.142.20 'pct exec 103 -- docker logs -f familyflix-frontend'
+ssh root@100.115.142.20 'pct exec 103 -- docker logs -f familyflix-cloudflared'
 ```
 
 Restart services:
