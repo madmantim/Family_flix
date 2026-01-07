@@ -24,6 +24,8 @@ const REFETCH_THRESHOLD = 5;
 // Minimum drag distance to trigger a swipe
 const SWIPE_THRESHOLD_PX = 100;
 
+type ExitDirection = 'left' | 'right' | 'down' | null;
+
 function MovieCard({
   movie,
   onSwipe,
@@ -31,6 +33,7 @@ function MovieCard({
   isTop,
   watched,
   onWatchedToggle,
+  exitDirection,
 }: {
   movie: Movie;
   onSwipe: (direction: SwipeDirection) => void;
@@ -38,6 +41,7 @@ function MovieCard({
   isTop: boolean;
   watched: boolean;
   onWatchedToggle: () => void;
+  exitDirection: ExitDirection;
 }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -74,6 +78,21 @@ function MovieCard({
     window.open(`${TMDB_BASE_URL}${movie.tmdb_id}`, '_blank', 'noopener,noreferrer');
   };
 
+  // Determine exit animation based on direction
+  const getExitAnimation = () => {
+    if (!isTop) return { opacity: 0 };
+    switch (exitDirection) {
+      case 'left':
+        return { x: -300, opacity: 0, transition: { duration: 0.2 } };
+      case 'right':
+        return { x: 300, opacity: 0, transition: { duration: 0.2 } };
+      case 'down':
+        return { y: 300, opacity: 0, transition: { duration: 0.2 } };
+      default:
+        return { x: 300, opacity: 0, transition: { duration: 0.2 } };
+    }
+  };
+
   return (
     <motion.div
       className={`movie-card ${isTop ? 'top' : ''}`}
@@ -84,7 +103,7 @@ function MovieCard({
       onDragEnd={handleDragEnd}
       initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10, opacity: isTop ? 1 : 0.8 }}
       animate={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10, opacity: 1 }}
-      exit={{ x: isTop ? 300 : 0, opacity: 0, transition: { duration: 0.2 } }}
+      exit={getExitAnimation()}
       layout
     >
       <div
@@ -218,6 +237,8 @@ export function SwipeScreen() {
   // Track skipped movie IDs in sessionStorage (persists until tab close)
   const [skippedIds, setSkippedIds] = useState<Set<number>>(getSkippedFromStorage);
   const [watched, setWatched] = useState(false);
+  // Track exit direction for proper animation
+  const [exitDirection, setExitDirection] = useState<ExitDirection>(null);
 
   const { data: queue, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['swipeQueue', memberId],
@@ -276,6 +297,8 @@ export function SwipeScreen() {
     (direction: SwipeDirection) => {
       const movie = availableMovies[0];
       if (movie && !swipeMutation.isPending) {
+        // Set exit direction for animation
+        setExitDirection(direction === 'yes' ? 'right' : 'left');
         swipeMutation.mutate({ movieId: movie.id, direction, watched });
       }
     },
@@ -285,6 +308,8 @@ export function SwipeScreen() {
   const handleSkip = useCallback(() => {
     const movie = availableMovies[0];
     if (movie) {
+      // Set exit direction for animation
+      setExitDirection('down');
       const newSkipped = new Set(skippedIds).add(movie.id);
       setSkippedIds(newSkipped);
       saveSkippedToStorage(newSkipped);
@@ -359,6 +384,7 @@ export function SwipeScreen() {
               isTop={true}
               watched={watched}
               onWatchedToggle={() => setWatched((w) => !w)}
+              exitDirection={exitDirection}
             />
           ) : null}
         </AnimatePresence>
