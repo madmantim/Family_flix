@@ -14,6 +14,7 @@ const SWIPE_HELP_ITEMS = [
   { icon: '✕', label: 'Pass' },
   { icon: '♥', label: 'Watch / Rewatch' },
   { icon: '👁', label: 'Seen it' },
+  { icon: '↓', label: 'Skip for now' },
 ];
 
 // Fetch a larger batch to reduce API calls
@@ -26,32 +27,39 @@ const SWIPE_THRESHOLD_PX = 100;
 function MovieCard({
   movie,
   onSwipe,
+  onSkip,
   isTop,
   watched,
   onWatchedToggle,
 }: {
   movie: Movie;
   onSwipe: (direction: SwipeDirection) => void;
+  onSkip: () => void;
   isTop: boolean;
   watched: boolean;
   onWatchedToggle: () => void;
 }) {
   const x = useMotionValue(0);
+  const y = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
 
   const yesOpacity = useTransform(x, [0, 100], [0, 1]);
   const noOpacity = useTransform(x, [-100, 0], [1, 0]);
+  const skipOpacity = useTransform(y, [0, 100], [0, 1]);
 
   const handleDragEnd = useCallback(
     (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-      if (info.offset.x > SWIPE_THRESHOLD_PX) {
+      // Check vertical swipe first (skip takes priority if dragging down)
+      if (info.offset.y > SWIPE_THRESHOLD_PX && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
+        onSkip();
+      } else if (info.offset.x > SWIPE_THRESHOLD_PX) {
         onSwipe('yes');
       } else if (info.offset.x < -SWIPE_THRESHOLD_PX) {
         onSwipe('no');
       }
     },
-    [onSwipe]
+    [onSwipe, onSkip]
   );
 
   const openTrailer = (e: React.MouseEvent) => {
@@ -69,9 +77,9 @@ function MovieCard({
   return (
     <motion.div
       className={`movie-card ${isTop ? 'top' : ''}`}
-      style={{ x, rotate, opacity }}
-      drag={isTop ? 'x' : false}
-      dragConstraints={{ left: 0, right: 0 }}
+      style={{ x, y: isTop ? y : 0, rotate, opacity }}
+      drag={isTop}
+      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.7}
       onDragEnd={handleDragEnd}
       initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 10, opacity: isTop ? 1 : 0.8 }}
@@ -92,6 +100,9 @@ function MovieCard({
         </motion.div>
         <motion.div className="swipe-indicator no" style={{ opacity: noOpacity }}>
           NOPE
+        </motion.div>
+        <motion.div className="swipe-indicator skip" style={{ opacity: skipOpacity }}>
+          SKIP
         </motion.div>
       </div>
 
@@ -153,6 +164,14 @@ function MovieCard({
         >
           ✕
         </motion.button>
+        <motion.button
+          className="swipe-btn skip"
+          onClick={(e) => { e.stopPropagation(); onSkip(); }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          ↓
+        </motion.button>
         <button
           className={`swipe-btn seen ${watched ? 'active' : ''}`}
           onClick={(e) => { e.stopPropagation(); onWatchedToggle(); }}
@@ -172,11 +191,32 @@ function MovieCard({
   );
 }
 
+// Session storage key for skipped movies (clears when tab closes)
+const SKIPPED_STORAGE_KEY = 'familyflix_skipped_movies';
+
+function getSkippedFromStorage(): Set<number> {
+  try {
+    const stored = sessionStorage.getItem(SKIPPED_STORAGE_KEY);
+    if (stored) {
+      return new Set(JSON.parse(stored));
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return new Set();
+}
+
+function saveSkippedToStorage(skipped: Set<number>) {
+  sessionStorage.setItem(SKIPPED_STORAGE_KEY, JSON.stringify([...skipped]));
+}
+
 export function SwipeScreen() {
   const navigate = useNavigate();
   const { memberId } = useCurrentMember();
   // Track swiped movie IDs locally to filter them out without race conditions
   const [swipedIds, setSwipedIds] = useState<Set<number>>(new Set());
+  // Track skipped movie IDs in sessionStorage (persists until tab close)
+  const [skippedIds, setSkippedIds] = useState<Set<number>>(getSkippedFromStorage);
   const [watched, setWatched] = useState(false);
 
   const { data: queue, isLoading, refetch, isFetching } = useQuery({
@@ -187,11 +227,11 @@ export function SwipeScreen() {
     refetchOnWindowFocus: false,
   });
 
-  // Filter out movies we've already swiped this session
+  // Filter out movies we've already swiped or skipped this session
   const availableMovies = useMemo(() => {
     if (!queue?.movies) return [];
-    return queue.movies.filter(movie => !swipedIds.has(movie.id));
-  }, [queue, swipedIds]);
+    return queue.movies.filter(movie => !swipedIds.has(movie.id) && !skippedIds.has(movie.id));
+  }, [queue, swipedIds, skippedIds]);
 
   // Calculate the true remaining count
   const trueRemaining = (queue?.total_unswiped || 0) - swipedIds.size;
@@ -241,6 +281,16 @@ export function SwipeScreen() {
     },
     [availableMovies, swipeMutation, watched]
   );
+
+  const handleSkip = useCallback(() => {
+    const movie = availableMovies[0];
+    if (movie) {
+      const newSkipped = new Set(skippedIds).add(movie.id);
+      setSkippedIds(newSkipped);
+      saveSkippedToStorage(newSkipped);
+      setWatched(false); // Reset watched for next card
+    }
+  }, [availableMovies, skippedIds]);
 
   if (isLoading) {
     return <div className="swipe-screen loading">Loading movies...</div>;
@@ -305,6 +355,7 @@ export function SwipeScreen() {
               key={`current-${currentMovie.id}`}
               movie={currentMovie}
               onSwipe={handleSwipe}
+              onSkip={handleSkip}
               isTop={true}
               watched={watched}
               onWatchedToggle={() => setWatched((w) => !w)}

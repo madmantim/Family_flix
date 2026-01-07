@@ -150,6 +150,16 @@
   transform: translateY(-50%) rotate(15deg);
 }
 
+.swipe-indicator.skip {
+  left: 50%;
+  top: auto;
+  bottom: -1rem;
+  transform: translateX(-50%) rotate(0deg);
+  color: var(--color-text-muted);
+  border-color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* Info section */
 .movie-card .info {
   margin-top: 1.25rem;
@@ -310,6 +320,19 @@
 
 .swipe-btn.seen:hover:not(.active) {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.swipe-btn.skip {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
+}
+
+.swipe-btn.skip:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-text-secondary);
 }
 
 /* Empty state */
