@@ -66,7 +66,7 @@ Once prerequisites are complete, set this flag:
 - [x] Create self-hosted application:
   - Name: `Family Flix`
   - Domain: `flix.andofam.com`
-  - Session duration: 24 hours
+  - Session duration: 1 month
 - [x] Create access policies:
   - **Family Domains** (ALLOW): Emails ending in @andersonfamily.name, @andofam.com, @tjando.com
   - **Family Members** (ALLOW): Specific family member email addresses
@@ -81,9 +81,8 @@ Once prerequisites are complete, set this flag:
 - [x] Email OTP sign-in option visible (Apple/Google can be added later if desired)
 - [x] Verify Tailscale access still works: `http://mediastack-as.bone-egret.ts.net:8088` - HTTP 200
 
-Remaining for user to verify:
-- [ ] Test sign-in with authorized email (user should test)
-- [ ] Verify Family Flix app loads after authentication (user should test)
+- [x] Test sign-in with authorized email - VERIFIED WORKING
+- [x] Verify Family Flix app loads after authentication - VERIFIED WORKING
 
 - [x] PHASE_5_COMPLETE=true
 
@@ -99,12 +98,22 @@ All phases must be complete:
 ## Summary
 
 **Public URL:** https://flix.andofam.com
-**Authentication:** Cloudflare Access with email OTP
+**Authentication:** Cloudflare Access with email OTP (one-time PIN)
+**Session Duration:** 1 month (sign in once per month)
+
 **Access Policies:**
 - Family Domains: @andersonfamily.name, @andofam.com, @tjando.com
 - Family Members: honey@, evie@, beck@andersonfamily.name, monty@andofam.com, tim@tjando.com, toby@bottrall.com.au, tobiasbottrallmusic@gmail.com
 
 **Tailscale Access:** Still functional at http://mediastack-as.bone-egret.ts.net:8088
+
+### How to Sign In
+1. Go to https://flix.andofam.com
+2. Enter your family email address
+3. Click "Send me a code"
+4. Check your email for a code from `noreply@notify.cloudflare.com`
+5. Enter the code to access Family Flix
+6. Session lasts 1 month before re-authentication needed
 
 ---
 
@@ -121,9 +130,12 @@ pct exec 103 -- docker logs familyflix-cloudflared
 - Verify frontend container is healthy
 - Check URL is `frontend:80` not `localhost:8088`
 
-### Access policy not working
+### Access policy not working / OTP emails not received
+- **IMPORTANT:** Ensure policies are actually attached to the application (Applications → Family Flix → Policies tab)
+- Creating policies alone is not enough - they must be selected and applied to the application
 - Verify email addresses match exactly
 - Check application domain matches `flix.andofam.com`
+- Check spam folder for emails from `noreply@notify.cloudflare.com`
 
 ## Rollback
 

@@ -7,7 +7,10 @@ Deploy to Arthur's Seat homelab (mediastack-as LXC 103).
 ### Public Access (via Cloudflare Tunnel)
 - **URL**: `https://flix.andofam.com`
 - **Authentication**: Cloudflare Access (email OTP)
+- **Session**: 1 month (sign in once per month)
 - **Allowed**: Family email domains (@andersonfamily.name, @andofam.com, @tjando.com)
+
+**To sign in:** Enter your email → Click "Send me a code" → Check email for code from Cloudflare → Enter code
 
 ### Internal Access (via Tailscale)
 - **URL**: `http://mediastack-as.bone-egret.ts.net:8088`
