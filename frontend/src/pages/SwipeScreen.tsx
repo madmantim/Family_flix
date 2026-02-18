@@ -254,17 +254,25 @@ export function SwipeScreen() {
     return queue.movies.filter(movie => !swipedIds.has(movie.id) && !skippedIds.has(movie.id));
   }, [queue, swipedIds, skippedIds]);
 
-  // Calculate the true remaining count
+  // Calculate the true remaining count (movies not yet voted on server-side)
   const trueRemaining = (queue?.total_unswiped || 0) - swipedIds.size;
 
+  // Count how many movies from the current batch we've skipped
+  const skippedInBatch = queue?.movies.filter(m => skippedIds.has(m.id)).length || 0;
+
+  // Check if we've skipped all available movies (nothing left to show, but not voted on them)
+  const allSkipped = availableMovies.length === 0 && skippedInBatch > 0 && trueRemaining > 0;
+
   // Auto-refetch when we're running low on movies but more exist on server
+  // Don't refetch if all remaining movies are just skipped
   useEffect(() => {
     let isMounted = true;
 
     if (
       availableMovies.length <= REFETCH_THRESHOLD &&
       trueRemaining > availableMovies.length &&
-      !isFetching
+      !isFetching &&
+      !allSkipped // Don't refetch if everything is just skipped
     ) {
       // Refetch fresh list from server, then clear swiped IDs on success
       refetch().then(() => {
@@ -277,7 +285,7 @@ export function SwipeScreen() {
     return () => {
       isMounted = false;
     };
-  }, [availableMovies.length, trueRemaining, isFetching, refetch]);
+  }, [availableMovies.length, trueRemaining, isFetching, refetch, allSkipped]);
 
   const swipeMutation = useMutation({
     mutationFn: ({ movieId, direction, watched }: { movieId: number; direction: SwipeDirection; watched: boolean }) =>
@@ -316,6 +324,11 @@ export function SwipeScreen() {
       setWatched(false); // Reset watched for next card
     }
   }, [availableMovies, skippedIds]);
+
+  const handleClearSkipped = useCallback(() => {
+    setSkippedIds(new Set());
+    sessionStorage.removeItem(SKIPPED_STORAGE_KEY);
+  }, []);
 
   if (isLoading) {
     return <div className="swipe-screen loading">Loading movies...</div>;
@@ -361,6 +374,19 @@ export function SwipeScreen() {
             >
               <h2>Loading more...</h2>
               <p>Fetching more movies to swipe</p>
+            </motion.div>
+          ) : allSkipped ? (
+            <motion.div
+              key="skipped"
+              className="empty-state"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <h2>All skipped!</h2>
+              <p>You've skipped {skippedInBatch} movie{skippedInBatch !== 1 ? 's' : ''}</p>
+              <button onClick={handleClearSkipped}>
+                Review Skipped
+              </button>
             </motion.div>
           ) : trueRemaining === 0 ? (
             <motion.div
