@@ -89,7 +89,10 @@
 
 .movie-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* auto-fill keeps tiles uniformly sized across mobile/tablet/desktop.
+     ~100px min matches the Discover grid and yields 3 cols at iPhone
+     widths, ~5 cols on an iPad, ~12 cols on a wide desktop. */
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 1rem;
   padding: 1rem;
 }

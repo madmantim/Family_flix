@@ -141,13 +141,17 @@ export function MovieDetailCard({
           >
             ✕
           </motion.button>
-          <button
+          <motion.button
             className={`swipe-btn seen ${watched ? 'active' : ''}`}
             onClick={onWatchedToggle}
             disabled={isPending}
+            aria-pressed={watched}
+            title={watched ? 'Mark as not watched' : 'Mark as watched'}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
             👁
-          </button>
+          </motion.button>
           <motion.button
             className="swipe-btn remove"
             onClick={onRemove}
