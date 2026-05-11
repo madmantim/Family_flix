@@ -71,7 +71,7 @@ async def discover_movies(
     tab: Literal["trending", "popular", "highly-rated", "all-time"] = Query(
         ...,
         description=(
-            "trending: TMDB's trending-this-week list (any era); "
+            "trending: popular right now, any era, watchable at home; "
             "popular: last 90 days, sorted by popularity; "
             "highly-rated: last 90 days, top-voted; "
             "all-time: any era, top-voted with significant vote count."
@@ -80,7 +80,14 @@ async def discover_movies(
     page: int = Query(1, ge=1),
     tmdb: TMDBService = Depends(get_tmdb_service),
 ):
-    """Discover movies via TMDB across four tabs."""
+    """Discover movies via TMDB across four tabs.
+
+    All four tabs restrict to ``with_release_type=4|5`` (Digital + Physical) —
+    this app is for at-home viewing only, so anything theatrical-only is
+    excluded. Note that the "Trending" tab does NOT use TMDB's curated
+    /trending feed: that feed surfaces films currently in cinemas only,
+    which is exactly what we want to filter out.
+    """
     today = datetime.now()
     ninety_days_ago = today - timedelta(days=90)
     recent_window = dict(
@@ -91,8 +98,13 @@ async def discover_movies(
     )
 
     if tab == "trending":
-        # TMDB's curated trending list — distinct from "popular recent".
-        results = await tmdb.get_trending(time_window="week", page=page)
+        # "Popular right now, watchable at home, any era" — naturally bubbles
+        # up older films riding a streamer release.
+        results = await tmdb.discover_movies(
+            sort_by="popularity.desc",
+            with_release_type="4|5",
+            page=page,
+        )
     elif tab == "popular":
         results = await tmdb.discover_movies(sort_by="popularity.desc", **recent_window)
     elif tab == "highly-rated":
@@ -102,11 +114,13 @@ async def discover_movies(
             **recent_window,
         )
     else:  # all-time
-        # No date filter; require enough votes to weed out small-sample-size flukes.
+        # No date filter; require enough votes to weed out small-sample flukes.
+        # vote_count_gte=1000 effectively guarantees a wide-release film, so
+        # the home-availability filter is just consistency, not a real cut.
         results = await tmdb.discover_movies(
             sort_by="vote_average.desc",
             vote_count_gte=1000,
-            with_release_type=None,  # don't restrict by home-release type
+            with_release_type="4|5",
             page=page,
         )
 

@@ -27,6 +27,18 @@ export function MovieDetailCard({
 }: MovieDetailCardProps) {
   const movie = entry.movie;
 
+  // Tapping a button that's already the current vote toggles it OFF by
+  // flipping to the opposite vote. This lets the user "un-like" (heart when
+  // YES) or "un-pass" (✕ when NO) directly from the detail view, instead of
+  // being forced to tap the other button.
+  const handleSwipeTap = (direction: SwipeDirection) => {
+    if (currentSwipe === direction) {
+      onSwipe(direction === 'yes' ? 'no' : 'yes');
+    } else {
+      onSwipe(direction);
+    }
+  };
+
   const openTrailer = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (movie.trailer_url) {
@@ -120,8 +132,10 @@ export function MovieDetailCard({
         <div className="swipe-actions">
           <motion.button
             className={`swipe-btn no ${currentSwipe === 'no' ? 'active' : ''}`}
-            onClick={() => onSwipe('no')}
+            onClick={() => handleSwipeTap('no')}
             disabled={isPending}
+            aria-pressed={currentSwipe === 'no'}
+            title={currentSwipe === 'no' ? 'Tap to put back on your list' : 'Pass'}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
@@ -145,8 +159,10 @@ export function MovieDetailCard({
           </motion.button>
           <motion.button
             className={`swipe-btn yes ${currentSwipe === 'yes' ? 'active' : ''}`}
-            onClick={() => onSwipe('yes')}
+            onClick={() => handleSwipeTap('yes')}
             disabled={isPending}
+            aria-pressed={currentSwipe === 'yes'}
+            title={currentSwipe === 'yes' ? 'Tap to remove from your list' : 'Watch / Rewatch'}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
