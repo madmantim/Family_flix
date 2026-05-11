@@ -205,9 +205,12 @@
   color: var(--color-destructive);
 }
 
-.movie-detail-card .swipe-btn.no:hover:not(:disabled) {
-  background: var(--color-destructive);
-  color: #fff;
+/* Hover on non-active button is a subtle pre-active preview — NOT a duplicate
+   of the active state. Otherwise toggling-off looks identical to staying-on
+   while the cursor lingers (the framer-motion scale: 1.1 covers the
+   "this is interactive" affordance). */
+.movie-detail-card .swipe-btn.no:hover:not(.active):not(:disabled) {
+  background: rgba(248, 113, 113, 0.35);
 }
 
 .movie-detail-card .swipe-btn.no.active {
@@ -221,9 +224,8 @@
   color: var(--color-success);
 }
 
-.movie-detail-card .swipe-btn.yes:hover:not(:disabled) {
-  background: var(--color-success);
-  color: #fff;
+.movie-detail-card .swipe-btn.yes:hover:not(.active):not(:disabled) {
+  background: rgba(74, 222, 128, 0.35);
 }
 
 .movie-detail-card .swipe-btn.yes.active {
