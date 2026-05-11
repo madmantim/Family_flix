@@ -5,7 +5,7 @@ from ..config import get_settings
 
 logger = logging.getLogger(__name__)
 
-OMDB_BASE_URL = "http://www.omdbapi.com"
+OMDB_BASE_URL = "https://www.omdbapi.com"
 
 
 class OMDbService:
@@ -13,76 +13,49 @@ class OMDbService:
         settings = get_settings()
         self.api_key = settings.omdb_api_key
 
-    @staticmethod
-    def _generate_rt_slug(title: str) -> str:
-        """Generate Rotten Tomatoes URL slug from movie title."""
-        slug = title.lower()
-        slug = slug.replace(":", "")
-        slug = slug.replace("'", "")
-        slug = slug.replace("&", "and")
-        slug = slug.replace(" - ", "_")
-        slug = slug.replace(" ", "_")
-        slug = "".join(c for c in slug if c.isalnum() or c == "_")
-        return slug
-
-    def get_rt_url(self, title: str) -> str:
-        """Generate full Rotten Tomatoes URL from movie title."""
-        slug = self._generate_rt_slug(title)
-        return f"https://www.rottentomatoes.com/m/{slug}"
+    async def _fetch(self, params: dict, *, label: str) -> Optional[dict]:
+        """GET OMDb and return the parsed payload, or None on any failure."""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(OMDB_BASE_URL, params=params)
+            if response.status_code != 200:
+                return None
+            data = response.json()
+            if data.get("Response") == "False":
+                return None
+            return data
+        except httpx.TimeoutException:
+            logger.error("OMDb %s timeout (params=%s)", label, params)
+        except httpx.RequestError as e:
+            logger.error("OMDb %s network error: %s", label, e)
+        except ValueError as e:
+            logger.error("OMDb %s invalid JSON: %s", label, e)
+        return None
 
     async def get_ratings_by_imdb_id(self, imdb_id: str) -> Optional[dict]:
-        """Get movie ratings from OMDb using IMDB ID"""
+        """Get movie ratings from OMDb using IMDB ID."""
         if not self.api_key or not imdb_id:
             return None
 
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(
-                    OMDB_BASE_URL,
-                    params={"i": imdb_id, "apikey": self.api_key}
-                )
-                if response.status_code != 200:
-                    return None
-
-                data = response.json()
-                if data.get("Response") == "False":
-                    return None
-
-                # Extract RT scores from Ratings array
-                rt_critic = None
-                rt_audience = None
-
-                for rating in data.get("Ratings", []):
-                    source = rating.get("Source", "")
-                    value = rating.get("Value", "")
-
-                    if source == "Rotten Tomatoes":
-                        # Format: "91%"
-                        try:
-                            rt_critic = int(value.replace("%", ""))
-                        except (ValueError, AttributeError):
-                            pass
-
-                # OMDb doesn't always have audience score in Ratings
-                # But we can construct the RT URL from the title
-                title = data.get("Title", "")
-
-                # Construct RT URL (best effort - may not always be exact)
-                rt_url = self.get_rt_url(title) if title else None
-
-                return {
-                    "rt_critic_score": rt_critic,
-                    "rt_audience_score": rt_audience,  # OMDb doesn't reliably provide this
-                    "rt_url": rt_url,
-                    "imdb_rating": data.get("imdbRating"),
-                    "metascore": data.get("Metascore"),
-                }
-        except httpx.TimeoutException:
-            logger.error("OMDb get_ratings_by_imdb_id timeout for imdb_id: %s", imdb_id)
+        data = await self._fetch(
+            {"i": imdb_id, "apikey": self.api_key},
+            label="by_imdb_id",
+        )
+        if data is None:
             return None
 
+        return {
+            "rt_critic_score": _extract_rt_score(data),
+            "rt_audience_score": None,  # OMDb doesn't reliably provide this
+            # Don't synthesise the RT URL — slug guessing is wrong often enough
+            # that storing a broken link is worse than no link.
+            "rt_url": None,
+            "imdb_rating": data.get("imdbRating"),
+            "metascore": data.get("Metascore"),
+        }
+
     async def get_ratings_by_title(self, title: str, year: Optional[int] = None) -> Optional[dict]:
-        """Get movie ratings from OMDb by title search"""
+        """Get movie ratings from OMDb by title search."""
         if not self.api_key:
             return None
 
@@ -90,39 +63,28 @@ class OMDbService:
         if year:
             params["y"] = str(year)
 
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(OMDB_BASE_URL, params=params)
-                if response.status_code != 200:
-                    return None
-
-                data = response.json()
-                if data.get("Response") == "False":
-                    return None
-
-                # Same extraction as above
-                rt_critic = None
-                for rating in data.get("Ratings", []):
-                    if rating.get("Source") == "Rotten Tomatoes":
-                        try:
-                            rt_critic = int(rating.get("Value", "").replace("%", ""))
-                        except (ValueError, AttributeError):
-                            pass
-
-                title = data.get("Title", "")
-                rt_url = self.get_rt_url(title) if title else None
-
-                return {
-                    "rt_critic_score": rt_critic,
-                    "rt_audience_score": None,
-                    "rt_url": rt_url,
-                    "imdb_id": data.get("imdbID"),
-                    "imdb_rating": data.get("imdbRating"),
-                    "metascore": data.get("Metascore"),
-                }
-        except httpx.TimeoutException:
-            logger.error("OMDb get_ratings_by_title timeout for title: %s", title)
+        data = await self._fetch(params, label="by_title")
+        if data is None:
             return None
+
+        return {
+            "rt_critic_score": _extract_rt_score(data),
+            "rt_audience_score": None,
+            "rt_url": None,
+            "imdb_id": data.get("imdbID"),
+            "imdb_rating": data.get("imdbRating"),
+            "metascore": data.get("Metascore"),
+        }
+
+
+def _extract_rt_score(data: dict) -> Optional[int]:
+    for rating in data.get("Ratings", []) or []:
+        if rating.get("Source") == "Rotten Tomatoes":
+            try:
+                return int(str(rating.get("Value", "")).replace("%", ""))
+            except (ValueError, AttributeError):
+                return None
+    return None
 
 
 def get_omdb_service() -> OMDbService:

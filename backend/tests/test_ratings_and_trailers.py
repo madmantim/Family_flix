@@ -435,8 +435,10 @@ class TestOMDbServiceRatingExtraction:
             assert result["rt_critic_score"] is None
 
     @pytest.mark.asyncio
-    async def test_constructs_rt_url_from_title(self):
-        """Test that RT URL is constructed from movie title"""
+    async def test_does_not_guess_rt_url(self):
+        """RT URL is no longer synthesised from a slug heuristic — it returned
+        wrong URLs too often to be worth keeping. The frontend hides the link
+        when None."""
         omdb = OMDbService()
         omdb.api_key = "test_key"
 
@@ -459,8 +461,7 @@ class TestOMDbServiceRatingExtraction:
             result = await omdb.get_ratings_by_imdb_id("tt1234567")
 
             assert result is not None
-            assert "rottentomatoes.com/m/" in result["rt_url"]
-            assert "dark" in result["rt_url"].lower()
+            assert result["rt_url"] is None
 
     @pytest.mark.asyncio
     async def test_returns_none_for_api_error(self):

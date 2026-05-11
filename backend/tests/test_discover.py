@@ -133,3 +133,79 @@ def test_discover_endpoint_invalid_tab(client):
     """Test GET /movies/discover with invalid tab returns 422"""
     response = client.get("/api/movies/discover?tab=invalid")
     assert response.status_code == 422  # FastAPI validation error
+
+
+def test_discover_endpoint_trending_uses_get_trending(client, mocker):
+    """tab=trending should call TMDBService.get_trending, NOT discover_movies."""
+    mock_results = {
+        "results": [
+            {"id": 789, "title": "Trending Now", "release_date": "2024-06-01",
+             "overview": "Buzzing this week", "poster_path": "/t.jpg", "vote_average": 7.2}
+        ],
+        "page": 1, "total_pages": 1, "total_results": 1,
+    }
+    trending_mock = mocker.patch(
+        "app.services.tmdb.TMDBService.get_trending",
+        new_callable=AsyncMock,
+        return_value=mock_results,
+    )
+    discover_mock = mocker.patch(
+        "app.services.tmdb.TMDBService.discover_movies",
+        new_callable=AsyncMock,
+    )
+
+    response = client.get("/api/movies/discover?tab=trending")
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["title"] == "Trending Now"
+    trending_mock.assert_called_once()
+    # trending should not also hit /discover
+    discover_mock.assert_not_called()
+
+
+def test_discover_endpoint_all_time_unrestricted(client, mocker):
+    """tab=all-time should drop the release-type filter and date window, and
+    require a meaningful vote count."""
+    captured = {}
+
+    async def fake_discover(**kwargs):
+        captured.update(kwargs)
+        return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
+
+    mocker.patch(
+        "app.services.tmdb.TMDBService.discover_movies",
+        side_effect=fake_discover,
+    )
+
+    response = client.get("/api/movies/discover?tab=all-time")
+
+    assert response.status_code == 200
+    assert captured["sort_by"] == "vote_average.desc"
+    assert captured["vote_count_gte"] == 1000
+    assert captured.get("with_release_type") is None
+    # No date window for all-time
+    assert "release_date_gte" not in captured or captured["release_date_gte"] is None
+    assert "release_date_lte" not in captured or captured["release_date_lte"] is None
+
+
+def test_discover_endpoint_popular_still_uses_90_day_window(client, mocker):
+    """Regression: tab=popular must keep the 90-day release window."""
+    captured = {}
+
+    async def fake_discover(**kwargs):
+        captured.update(kwargs)
+        return {"results": [], "page": 1, "total_pages": 0, "total_results": 0}
+
+    mocker.patch(
+        "app.services.tmdb.TMDBService.discover_movies",
+        side_effect=fake_discover,
+    )
+
+    response = client.get("/api/movies/discover?tab=popular")
+    assert response.status_code == 200
+    assert captured["sort_by"] == "popularity.desc"
+    assert captured["with_release_type"] == "4|5"
+    # release_date_gte should be ~90 days ago
+    today = datetime.now()
+    gte = datetime.strptime(captured["release_date_gte"], "%Y-%m-%d")
+    assert 89 <= (today - gte).days <= 91

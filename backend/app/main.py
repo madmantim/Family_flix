@@ -1,9 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 import os
-from .database import engine, Base
+from .config import get_settings
+from .database import engine, Base, get_db
 from .routers import members, movies, swipes, watchlist, movie_night, watched
+
+settings = get_settings()
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -11,14 +16,16 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Family Flix Picker",
     description="Async movie voting for family movie night",
-    version="1.0.0"
+    version="1.0.0",
 )
 
-# CORS for frontend
+# When origins == ["*"], credentials must be False per CORS spec (browsers reject otherwise).
+cors_origins = settings.cors_origin_list or ["*"]
+allow_credentials = cors_origins != ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to your domain
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -38,5 +45,9 @@ app.include_router(watched.router, prefix="/api/watched", tags=["watched"])
 
 
 @app.get("/api/health")
-async def health_check():
+def health_check(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception:
+        raise HTTPException(status_code=503, detail="database unavailable")
     return {"status": "healthy", "app": "Family Flix Picker"}

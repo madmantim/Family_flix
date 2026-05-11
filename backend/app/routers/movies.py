@@ -11,6 +11,40 @@ from ..utils import movie_to_response
 router = APIRouter()
 
 
+def _parse_year(release_date) -> Optional[int]:
+    if not release_date or not isinstance(release_date, str):
+        return None
+    try:
+        return int(release_date[:4])
+    except (ValueError, TypeError):
+        return None
+
+
+def _to_search_result(tmdb: TMDBService, raw: dict) -> Optional[TMDBSearchResult]:
+    tmdb_id = raw.get("id")
+    title = raw.get("title")
+    if not tmdb_id or not title:
+        return None
+    return TMDBSearchResult(
+        tmdb_id=tmdb_id,
+        title=title,
+        year=_parse_year(raw.get("release_date")),
+        overview=raw.get("overview"),
+        poster_url=tmdb.get_poster_url(raw.get("poster_path")),
+        vote_average=raw.get("vote_average"),
+    )
+
+
+def _to_search_response(tmdb: TMDBService, results: dict) -> TMDBSearchResponse:
+    mapped = (_to_search_result(tmdb, m) for m in results.get("results", []) or [])
+    return TMDBSearchResponse(
+        results=[r for r in mapped if r is not None],
+        page=results.get("page", 1),
+        total_pages=results.get("total_pages", 0),
+        total_results=results.get("total_results", 0),
+    )
+
+
 @router.get("/search", response_model=TMDBSearchResponse)
 async def search_movies(
     query: str = Query(..., min_length=1),
@@ -19,23 +53,7 @@ async def search_movies(
 ):
     """Search TMDB for movies"""
     results = await tmdb.search_movies(query, page)
-
-    return TMDBSearchResponse(
-        results=[
-            TMDBSearchResult(
-                tmdb_id=m["id"],
-                title=m["title"],
-                year=int(m["release_date"][:4]) if m.get("release_date") else None,
-                overview=m.get("overview"),
-                poster_url=tmdb.get_poster_url(m.get("poster_path")),
-                vote_average=m.get("vote_average")
-            )
-            for m in results.get("results", [])
-        ],
-        page=results.get("page", 1),
-        total_pages=results.get("total_pages", 0),
-        total_results=results.get("total_results", 0)
-    )
+    return _to_search_response(tmdb, results)
 
 
 @router.get("/trending", response_model=TMDBSearchResponse)
@@ -45,73 +63,54 @@ async def get_trending(
 ):
     """Get trending movies from TMDB"""
     results = await tmdb.get_trending("week", page)
-
-    return TMDBSearchResponse(
-        results=[
-            TMDBSearchResult(
-                tmdb_id=m["id"],
-                title=m["title"],
-                year=int(m["release_date"][:4]) if m.get("release_date") else None,
-                overview=m.get("overview"),
-                poster_url=tmdb.get_poster_url(m.get("poster_path")),
-                vote_average=m.get("vote_average")
-            )
-            for m in results.get("results", [])
-        ],
-        page=results.get("page", 1),
-        total_pages=results.get("total_pages", 0),
-        total_results=results.get("total_results", 0)
-    )
+    return _to_search_response(tmdb, results)
 
 
 @router.get("/discover", response_model=TMDBSearchResponse)
 async def discover_movies(
-    tab: Literal["popular", "highly-rated"] = Query(..., description="Tab: 'popular' or 'highly-rated'"),
+    tab: Literal["trending", "popular", "highly-rated", "all-time"] = Query(
+        ...,
+        description=(
+            "trending: TMDB's trending-this-week list (any era); "
+            "popular: last 90 days, sorted by popularity; "
+            "highly-rated: last 90 days, top-voted; "
+            "all-time: any era, top-voted with significant vote count."
+        ),
+    ),
     page: int = Query(1, ge=1),
-    tmdb: TMDBService = Depends(get_tmdb_service)
+    tmdb: TMDBService = Depends(get_tmdb_service),
 ):
-    """Discover movies available for home viewing (streaming/VOD/disc)"""
-    # Calculate date range (last 90 days)
+    """Discover movies via TMDB across four tabs."""
     today = datetime.now()
     ninety_days_ago = today - timedelta(days=90)
+    recent_window = dict(
+        release_date_gte=ninety_days_ago.strftime("%Y-%m-%d"),
+        release_date_lte=today.strftime("%Y-%m-%d"),
+        with_release_type="4|5",
+        page=page,
+    )
 
-    release_date_gte = ninety_days_ago.strftime("%Y-%m-%d")
-    release_date_lte = today.strftime("%Y-%m-%d")
-
-    if tab == "popular":
-        results = await tmdb.discover_movies(
-            sort_by="popularity.desc",
-            release_date_gte=release_date_gte,
-            release_date_lte=release_date_lte,
-            with_release_type="4|5",
-            page=page
-        )
-    else:  # highly-rated
+    if tab == "trending":
+        # TMDB's curated trending list — distinct from "popular recent".
+        results = await tmdb.get_trending(time_window="week", page=page)
+    elif tab == "popular":
+        results = await tmdb.discover_movies(sort_by="popularity.desc", **recent_window)
+    elif tab == "highly-rated":
         results = await tmdb.discover_movies(
             sort_by="vote_average.desc",
-            release_date_gte=release_date_gte,
-            release_date_lte=release_date_lte,
             vote_count_gte=50,
-            with_release_type="4|5",
-            page=page
+            **recent_window,
+        )
+    else:  # all-time
+        # No date filter; require enough votes to weed out small-sample-size flukes.
+        results = await tmdb.discover_movies(
+            sort_by="vote_average.desc",
+            vote_count_gte=1000,
+            with_release_type=None,  # don't restrict by home-release type
+            page=page,
         )
 
-    return TMDBSearchResponse(
-        results=[
-            TMDBSearchResult(
-                tmdb_id=m["id"],
-                title=m["title"],
-                year=int(m["release_date"][:4]) if m.get("release_date") else None,
-                overview=m.get("overview"),
-                poster_url=tmdb.get_poster_url(m.get("poster_path")),
-                vote_average=m.get("vote_average")
-            )
-            for m in results.get("results", [])
-        ],
-        page=results.get("page", 1),
-        total_pages=results.get("total_pages", 0),
-        total_results=results.get("total_results", 0)
-    )
+    return _to_search_response(tmdb, results)
 
 
 @router.get("/{movie_id}", response_model=MovieResponse)

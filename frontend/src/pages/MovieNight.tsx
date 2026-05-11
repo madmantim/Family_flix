@@ -550,7 +550,7 @@ export function MovieNight() {
                   setCurrentIndex(0);
                 }}
               >
-                Done
+                Watch Later
               </button>
             </div>
           </motion.div>
@@ -612,7 +612,7 @@ export function MovieNight() {
                   setCurrentIndex(0);
                 }}
               >
-                Skip
+                Cancel
               </button>
             </div>
           </motion.div>

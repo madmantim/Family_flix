@@ -38,7 +38,9 @@ export const uploadAvatar = async (memberId: number, file: File): Promise<Member
 // Movies
 export const searchMovies = (query: string, page = 1) =>
   api.get<TMDBSearchResponse>('/movies/search', { params: { query, page } }).then(r => r.data);
-export const discoverMovies = (tab: 'popular' | 'highly-rated', page = 1) =>
+export type DiscoverTab = 'trending' | 'popular' | 'highly-rated' | 'all-time';
+
+export const discoverMovies = (tab: DiscoverTab, page = 1) =>
   api.get<TMDBSearchResponse>('/movies/discover', { params: { tab, page } }).then(r => r.data);
 
 // Swipes
@@ -78,3 +80,21 @@ export const removeWatched = (memberId: number, movieId: number) =>
 
 export const toggleWatched = (memberId: number, movieId: number) =>
   api.put(`/watched/${memberId}/${movieId}`).then(r => r.data);
+
+export interface BulkWatchlistUpdateResponse {
+  updated_count: number;
+  watched_recorded: number;
+}
+
+export const bulkUpdateWatchlist = (
+  memberId: number,
+  movieIds: number[],
+  markWatched: boolean,
+) =>
+  api
+    .post<BulkWatchlistUpdateResponse>('/watchlist/bulk-update', {
+      member_id: memberId,
+      movie_ids: movieIds,
+      mark_watched: markWatched,
+    })
+    .then(r => r.data);

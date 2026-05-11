@@ -69,6 +69,51 @@ def test_swipe_queue_filters_by_content_rating(client, db):
     assert "Adult Movie" not in titles
 
 
+def test_swipe_queue_mature_filter_excludes_adult(client, db):
+    """Regression: a MATURE filter must NOT include ADULT-rated movies."""
+    mature = Member(name="Sarah", content_filter=ContentRating.MATURE)
+    db.add(mature)
+    db.commit()
+
+    movies = [
+        Movie(tmdb_id=1, title="Kid Movie", content_rating=ContentRating.ALL_AGES),
+        Movie(tmdb_id=2, title="Teen Movie", content_rating=ContentRating.TEEN),
+        Movie(tmdb_id=3, title="Mature Movie", content_rating=ContentRating.MATURE),
+        Movie(tmdb_id=4, title="Adult Movie", content_rating=ContentRating.ADULT),
+    ]
+    db.add_all(movies)
+    db.commit()
+    for m in movies:
+        db.add(WatchlistEntry(movie_id=m.id, added_by_id=mature.id))
+    db.commit()
+
+    resp = client.get(f"/api/swipes/queue/{mature.id}")
+    assert resp.status_code == 200
+    titles = {m["title"] for m in resp.json()["movies"]}
+    assert titles == {"Kid Movie", "Teen Movie", "Mature Movie"}
+    assert resp.json()["total_unswiped"] == 3
+
+
+def test_swipe_queue_adult_filter_sees_everything(client, db):
+    """An ADULT filter should see all rating levels."""
+    adult = Member(name="Tim", content_filter=ContentRating.ADULT)
+    db.add(adult)
+    db.commit()
+
+    movies = [
+        Movie(tmdb_id=1, title="Kid", content_rating=ContentRating.ALL_AGES),
+        Movie(tmdb_id=4, title="Adult", content_rating=ContentRating.ADULT),
+    ]
+    db.add_all(movies)
+    db.commit()
+    for m in movies:
+        db.add(WatchlistEntry(movie_id=m.id, added_by_id=adult.id))
+    db.commit()
+
+    resp = client.get(f"/api/swipes/queue/{adult.id}")
+    assert resp.json()["total_unswiped"] == 2
+
+
 def test_swipe_updates_existing(client, db):
     """Test that swiping again updates the existing swipe"""
     # Create member and movie

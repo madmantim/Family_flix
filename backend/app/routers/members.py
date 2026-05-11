@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from sqlalchemy.orm import Session
 from typing import List
 from PIL import Image
@@ -12,8 +12,15 @@ from ..schemas import MemberCreate, MemberResponse, MemberUpdate
 logger = logging.getLogger(__name__)
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 AVATAR_SIZE = 256
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+# Cap decoded image dimensions to prevent decompression bombs (Pillow default
+# is 89M which is too generous for avatar input). Pillow only warns up to 2x
+# this, so we also enforce it explicitly after parsing the header.
+MAX_AVATAR_PIXELS = 25_000_000  # ~5000x5000
+Image.MAX_IMAGE_PIXELS = MAX_AVATAR_PIXELS
 
 router = APIRouter()
 
@@ -87,53 +94,61 @@ def delete_member(member_id: int, db: Session = Depends(get_db)):
 @router.post("/{member_id}/avatar", response_model=MemberResponse)
 async def upload_avatar(
     member_id: int,
+    request: Request,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Upload and set a member's avatar image"""
-    # Validate member exists
     member = db.query(Member).filter(Member.id == member_id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    # Validate content type
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=400,
-            detail="Invalid file type. Please upload a JPEG, PNG, or WebP image."
+            detail="Invalid file type. Please upload a JPEG, PNG, or WebP image.",
         )
 
-    # Read file content
+    # Reject oversized payloads before reading the body, when the client tells us.
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="Image too large. Maximum size is 5MB.")
+
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="Image too large. Maximum size is 5MB.")
 
-    # Process image with Pillow
     try:
         img = Image.open(BytesIO(content))
-        img = img.convert("RGB")  # Ensure RGB for JPEG output
+        # Verify the format matches the claimed content type to prevent disguised payloads.
+        if img.format not in ALLOWED_IMAGE_FORMATS:
+            raise HTTPException(status_code=400, detail="Unsupported image format.")
 
-        # Center crop to square
+        # Hard-fail oversized images before any expensive decode. Pillow's
+        # MAX_IMAGE_PIXELS only warns up to 2x the limit.
         width, height = img.size
+        if width * height > MAX_AVATAR_PIXELS:
+            raise HTTPException(status_code=400, detail="Image dimensions too large.")
+
+        img = img.convert("RGB")
         min_dim = min(width, height)
         left = (width - min_dim) // 2
         top = (height - min_dim) // 2
         img = img.crop((left, top, left + min_dim, top + min_dim))
-
-        # Resize to target size
         img = img.resize((AVATAR_SIZE, AVATAR_SIZE), Image.Resampling.LANCZOS)
 
-        # Save to static directory
         static_dir = os.path.join(os.path.dirname(__file__), "..", "..", "static", "avatars")
         os.makedirs(static_dir, exist_ok=True)
         avatar_path = os.path.join(static_dir, f"{member_id}.jpg")
         img.save(avatar_path, "JPEG", quality=85)
-
+    except HTTPException:
+        raise
+    except Image.DecompressionBombError:
+        raise HTTPException(status_code=400, detail="Image dimensions too large.")
     except Exception as e:
         logger.error("Failed to process avatar for member %d: %s", member_id, e)
         raise HTTPException(status_code=400, detail="Failed to process image.")
 
-    # Update member's avatar_url
     member.avatar_url = f"/static/avatars/{member_id}.jpg"
     db.commit()
     db.refresh(member)

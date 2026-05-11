@@ -1,5 +1,6 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   getWatchlist,
@@ -12,6 +13,8 @@ import {
   removeWatched,
   getMemberSwipes,
   discoverMovies,
+  bulkUpdateWatchlist,
+  type DiscoverTab,
 } from '../api/client';
 import { useCurrentMember } from '../hooks/useCurrentMember';
 import { MovieDetailCard } from '../components/MovieDetailCard';
@@ -31,6 +34,7 @@ const WATCHLIST_HELP_ITEMS = [
 
 export function Watchlist() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { memberId } = useCurrentMember();
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,8 +42,12 @@ export function Watchlist() {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<WatchlistEntry | null>(null);
   const [showDiscover, setShowDiscover] = useState(false);
-  const [discoverTab, setDiscoverTab] = useState<'popular' | 'highly-rated'>('popular');
+  const [discoverTab, setDiscoverTab] = useState<DiscoverTab>('trending');
   const [addError, setAddError] = useState<string | null>(null);
+  // Select mode: tapping a poster toggles selection instead of opening detail.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedMovieIds, setSelectedMovieIds] = useState<Set<number>>(new Set());
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   const { data: watchlist, isLoading } = useQuery({
     queryKey: ['watchlist'],
@@ -165,6 +173,44 @@ export function Watchlist() {
     },
   });
 
+  const bulkMutation = useMutation({
+    mutationFn: ({ movieIds, markWatched }: { movieIds: number[]; markWatched: boolean }) =>
+      bulkUpdateWatchlist(memberId!, movieIds, markWatched),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['memberSwipes', memberId] });
+      queryClient.invalidateQueries({ queryKey: ['memberWatched', memberId] });
+      queryClient.invalidateQueries({ queryKey: ['swipeQueue'] });
+      queryClient.invalidateQueries({ queryKey: ['history', memberId] });
+      queryClient.invalidateQueries({ queryKey: ['stats', memberId] });
+      setBulkError(null);
+      setSelectMode(false);
+      setSelectedMovieIds(new Set());
+    },
+    onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
+      console.error('Bulk update failed:', error);
+      const message = error.response?.data?.detail || 'Update failed. Please try again.';
+      setBulkError(message);
+    },
+  });
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedMovieIds(new Set());
+    setBulkError(null);
+  };
+
+  const toggleMovieSelection = (movieId: number) => {
+    setSelectedMovieIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(movieId)) {
+        next.delete(movieId);
+      } else {
+        next.add(movieId);
+      }
+      return next;
+    });
+  };
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
@@ -213,26 +259,52 @@ export function Watchlist() {
   return (
     <div className="watchlist-page">
       <header>
-        <h1>Watchlist</h1>
-        <div className="header-controls">
-          <HelpTooltip items={WATCHLIST_HELP_ITEMS} />
-          <button
-            className="icon-btn discover-btn"
-            onClick={() => setShowDiscover(true)}
-            aria-label="Discover trending movies"
-            title="Discover"
-          >
-            🔥
-          </button>
-          <button
-            className="icon-btn add-btn"
-            onClick={() => setShowSearch(true)}
-            aria-label="Add movie"
-            title="Add movie"
-          >
-            +
-          </button>
-        </div>
+        {selectMode ? (
+          <>
+            <h1>{selectedMovieIds.size} selected</h1>
+            <div className="header-controls">
+              <button
+                className="text-btn cancel-select-btn"
+                onClick={exitSelectMode}
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1>Watchlist</h1>
+            <div className="header-controls">
+              <HelpTooltip items={WATCHLIST_HELP_ITEMS} />
+              {likedMovies.length > 0 && (
+                <button
+                  className="icon-btn select-btn"
+                  onClick={() => setSelectMode(true)}
+                  aria-label="Select multiple movies"
+                  title="Select multiple"
+                >
+                  ☑
+                </button>
+              )}
+              <button
+                className="icon-btn discover-btn"
+                onClick={() => setShowDiscover(true)}
+                aria-label="Discover trending movies"
+                title="Discover"
+              >
+                🔥
+              </button>
+              <button
+                className="icon-btn add-btn"
+                onClick={() => setShowSearch(true)}
+                aria-label="Add movie"
+                title="Add movie"
+              >
+                +
+              </button>
+            </div>
+          </>
+        )}
       </header>
 
       {isLoading ? (
@@ -242,41 +314,62 @@ export function Watchlist() {
           <p>No movies in the pool yet</p>
           <button onClick={() => setShowSearch(true)}>Add your first movie</button>
         </div>
+      ) : likedMovies.length === 0 ? (
+        <div className="empty">
+          <p>You haven't liked any movies yet</p>
+          <p className="empty-hint">Swipe right (♥) on movies you want to watch</p>
+          <button onClick={() => navigate('/swipe')}>Start Swiping</button>
+        </div>
       ) : (
-        <div className="movie-grid">
-          {likedMovies.map((entry) => (
-            <motion.div
-              key={entry.id}
-              className="movie-item"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              layout
-            >
-              <div
-                className="poster"
-                style={{
-                  backgroundImage: entry.movie.poster_url
-                    ? `url(${entry.movie.poster_url})`
-                    : undefined,
-                }}
-                onClick={() => setSelectedEntry(entry)}
+        <div className={`movie-grid ${selectMode ? 'select-mode' : ''}`}>
+          {likedMovies.map((entry) => {
+            const isSelected = selectedMovieIds.has(entry.movie.id);
+            return (
+              <motion.div
+                key={entry.id}
+                className={`movie-item ${isSelected ? 'selected' : ''}`}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                layout
               >
-                {!entry.movie.poster_url && <span>No Poster</span>}
-                <button
-                  className="remove-btn"
-                  disabled={removeMutation.isPending}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeMutation.mutate(entry.id);
+                <div
+                  className="poster"
+                  style={{
+                    backgroundImage: entry.movie.poster_url
+                      ? `url(${entry.movie.poster_url})`
+                      : undefined,
+                  }}
+                  onClick={() => {
+                    if (selectMode) {
+                      toggleMovieSelection(entry.movie.id);
+                    } else {
+                      setSelectedEntry(entry);
+                    }
                   }}
                 >
-                  {removeMutation.isPending ? '...' : '✕'}
-                </button>
-              </div>
-              <div className="title">{entry.movie.title}</div>
-              <div className="added-by">Added by {entry.added_by.name}</div>
-            </motion.div>
-          ))}
+                  {!entry.movie.poster_url && <span>No Poster</span>}
+                  {selectMode ? (
+                    <div className={`select-indicator ${isSelected ? 'checked' : ''}`}>
+                      {isSelected ? '✓' : ''}
+                    </div>
+                  ) : (
+                    <button
+                      className="remove-btn"
+                      disabled={removeMutation.isPending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeMutation.mutate(entry.id);
+                      }}
+                    >
+                      {removeMutation.isPending ? '...' : '✕'}
+                    </button>
+                  )}
+                </div>
+                <div className="title">{entry.movie.title}</div>
+                <div className="added-by">Added by {entry.added_by.name}</div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
@@ -412,16 +505,28 @@ export function Watchlist() {
 
               <div className="discover-tabs">
                 <button
+                  className={`tab ${discoverTab === 'trending' ? 'active' : ''}`}
+                  onClick={() => setDiscoverTab('trending')}
+                >
+                  Trending
+                </button>
+                <button
                   className={`tab ${discoverTab === 'popular' ? 'active' : ''}`}
                   onClick={() => setDiscoverTab('popular')}
                 >
-                  Popular
+                  New &amp; Popular
                 </button>
                 <button
                   className={`tab ${discoverTab === 'highly-rated' ? 'active' : ''}`}
                   onClick={() => setDiscoverTab('highly-rated')}
                 >
-                  Highly Rated
+                  New &amp; Acclaimed
+                </button>
+                <button
+                  className={`tab ${discoverTab === 'all-time' ? 'active' : ''}`}
+                  onClick={() => setDiscoverTab('all-time')}
+                >
+                  All-Time Greats
                 </button>
               </div>
 
@@ -436,7 +541,7 @@ export function Watchlist() {
                   <>
                     <div className="discover-grid">
                       {discoverResults
-                        .filter(movie => !watchlist?.some(w => w.movie.tmdb_id === movie.tmdb_id))
+                        .filter(movie => !watchlistTmdbIds.has(movie.tmdb_id))
                         .map((movie) => (
                           <motion.div
                             key={movie.tmdb_id}
@@ -501,6 +606,46 @@ export function Watchlist() {
               }
             }}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectMode && selectedMovieIds.size > 0 && (
+          <motion.div
+            className="bulk-action-bar"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            {bulkError && (
+              <div className="bulk-error" role="alert">{bulkError}</div>
+            )}
+            <button
+              className="bulk-action primary"
+              disabled={bulkMutation.isPending}
+              onClick={() =>
+                bulkMutation.mutate({
+                  movieIds: Array.from(selectedMovieIds),
+                  markWatched: true,
+                })
+              }
+            >
+              {bulkMutation.isPending ? 'Updating…' : 'Mark watched & remove'}
+            </button>
+            <button
+              className="bulk-action secondary"
+              disabled={bulkMutation.isPending}
+              onClick={() =>
+                bulkMutation.mutate({
+                  movieIds: Array.from(selectedMovieIds),
+                  markWatched: false,
+                })
+              }
+            >
+              Just remove (changed my mind)
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 

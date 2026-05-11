@@ -4,12 +4,25 @@ from sqlalchemy import select, func, case
 from datetime import datetime, timedelta, timezone
 from typing import List
 from ..database import get_db
-from ..models import Swipe, Movie, Member, WatchlistEntry, SwipeDirection, MemberWatched
+from ..models import Swipe, Movie, Member, WatchlistEntry, SwipeDirection, MemberWatched, ContentRating
 from ..schemas import SwipeCreate, SwipeResponse, SwipeQueueResponse, MovieResponse
 from ..utils import movie_to_response
 
 # Movies added within this many days are prioritized by recency
 RECENCY_WINDOW_DAYS = 14
+
+# Content rating hierarchy: a member's filter allows their level and everything below.
+CONTENT_RATING_ORDER = [
+    ContentRating.ALL_AGES,
+    ContentRating.TEEN,
+    ContentRating.MATURE,
+    ContentRating.ADULT,
+]
+
+
+def allowed_ratings_for(member_filter: ContentRating) -> list[ContentRating]:
+    """Return the list of ratings a member with this filter is allowed to see."""
+    return CONTENT_RATING_ORDER[: CONTENT_RATING_ORDER.index(member_filter) + 1]
 
 router = APIRouter()
 
@@ -112,12 +125,8 @@ def get_swipe_queue(member_id: int, limit: int = 20, db: Session = Depends(get_d
     )
 
     # Apply content filter based on member's setting
-    from ..models import ContentRating
-    if member.content_filter == ContentRating.TEEN:
-        query = query.filter(Movie.content_rating.in_([ContentRating.ALL_AGES, ContentRating.TEEN]))
-    elif member.content_filter == ContentRating.ALL_AGES:
-        query = query.filter(Movie.content_rating == ContentRating.ALL_AGES)
-    # MATURE and ADULT see everything
+    allowed = allowed_ratings_for(member.content_filter)
+    query = query.filter(Movie.content_rating.in_(allowed))
 
     # Order by:
     # 1. Recent movies first (is_recent = 1 for new, 0 for old)
@@ -150,10 +159,7 @@ def get_swipe_queue(member_id: int, limit: int = 20, db: Session = Depends(get_d
             ~Movie.id.in_(swiped_subquery)
         )
     )
-    if member.content_filter == ContentRating.TEEN:
-        count_query = count_query.filter(Movie.content_rating.in_([ContentRating.ALL_AGES, ContentRating.TEEN]))
-    elif member.content_filter == ContentRating.ALL_AGES:
-        count_query = count_query.filter(Movie.content_rating == ContentRating.ALL_AGES)
+    count_query = count_query.filter(Movie.content_rating.in_(allowed))
 
     total = count_query.scalar()
 

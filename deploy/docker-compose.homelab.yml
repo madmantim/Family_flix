@@ -18,6 +18,7 @@ services:
       - TMDB_API_KEY=${TMDB_API_KEY}
       - TMDB_ACCESS_TOKEN=${TMDB_ACCESS_TOKEN}
       - OMDB_API_KEY=${OMDB_API_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://flix.andofam.com,http://mediastack-as.bone-egret.ts.net:8088}
       - DATABASE_URL=sqlite:///data/family_flix.db
     volumes:
       - app-data:/app/data

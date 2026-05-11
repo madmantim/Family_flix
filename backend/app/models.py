@@ -34,9 +34,15 @@ class Member(Base):
     content_filter = Column(SQLEnum(ContentRating), default=ContentRating.ADULT)
     created_at = Column(DateTime, default=utc_now)
 
-    swipes = relationship("Swipe", back_populates="member")
-    watchlist_additions = relationship("WatchlistEntry", back_populates="added_by")
-    watched_movies = relationship("MemberWatched", back_populates="member")
+    swipes = relationship(
+        "Swipe", back_populates="member", cascade="all, delete-orphan"
+    )
+    watchlist_additions = relationship(
+        "WatchlistEntry", back_populates="added_by", cascade="all, delete-orphan"
+    )
+    watched_movies = relationship(
+        "MemberWatched", back_populates="member", cascade="all, delete-orphan"
+    )
 
 
 class Movie(Base):

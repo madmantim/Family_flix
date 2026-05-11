@@ -1,7 +1,17 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from .models import ContentRating, SwipeDirection
+
+
+def _dedupe_preserve_order(values: List[int]) -> List[int]:
+    seen: set[int] = set()
+    out: List[int] = []
+    for v in values:
+        if v not in seen:
+            seen.add(v)
+            out.append(v)
+    return out
 
 
 # Member schemas
@@ -98,7 +108,12 @@ class WatchlistEntryResponse(BaseModel):
 
 # Movie Night schemas
 class MovieNightRequest(BaseModel):
-    present_member_ids: List[int]
+    present_member_ids: List[int] = Field(..., min_length=1)
+
+    @field_validator("present_member_ids")
+    @classmethod
+    def _dedupe(cls, v: List[int]) -> List[int]:
+        return _dedupe_preserve_order(v)
 
 
 class MatchedMovie(BaseModel):
@@ -163,4 +178,32 @@ class MemberWatchedWithMovie(BaseModel):
 
 class MarkWatchedRequest(BaseModel):
     movie_id: int
-    member_ids: List[int]
+    member_ids: List[int] = Field(..., min_length=1)
+
+    @field_validator("member_ids")
+    @classmethod
+    def _dedupe(cls, v: List[int]) -> List[int]:
+        return _dedupe_preserve_order(v)
+
+
+class BulkWatchlistUpdateRequest(BaseModel):
+    """Bulk update one member's relationship to several watchlist movies.
+
+    Used by the Watchlist page's select-mode actions. Both actions flip the
+    member's swipe to NO so the films drop off their personal liked grid;
+    `mark_watched` additionally records a MemberWatched row.
+    The shared watchlist pool is untouched — other members are unaffected.
+    """
+    member_id: int
+    movie_ids: List[int] = Field(..., min_length=1)
+    mark_watched: bool
+
+    @field_validator("movie_ids")
+    @classmethod
+    def _dedupe(cls, v: List[int]) -> List[int]:
+        return _dedupe_preserve_order(v)
+
+
+class BulkWatchlistUpdateResponse(BaseModel):
+    updated_count: int
+    watched_recorded: int

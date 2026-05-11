@@ -142,21 +142,45 @@ ssh root@100.115.142.20 'pct exec 103 -- bash -c "cd /opt/familyflix && docker c
 
 ## Backup & Restore
 
-### Backup Database
+### Backup Database + Avatars
+
+Use SQLite's online `.backup` command so the snapshot is consistent even while
+the app is writing. Then also snapshot the avatar volume — it isn't worth
+losing custom avatars to a torn copy.
 
 ```bash
-# Copy from container
-ssh root@100.115.142.20 'pct exec 103 -- docker cp familyflix-backend:/app/data/family_flix.db /tmp/backup.db'
-scp root@100.115.142.20:/tmp/backup.db ./family_flix_backup_$(date +%Y%m%d).db
+DATE=$(date +%Y%m%d)
+
+# 1. Consistent SQLite snapshot (no need to stop the backend)
+ssh root@100.115.142.20 "pct exec 103 -- docker exec familyflix-backend \
+  sqlite3 /app/data/family_flix.db \".backup /app/data/backup.db\""
+ssh root@100.115.142.20 "pct exec 103 -- docker cp familyflix-backend:/app/data/backup.db /tmp/family_flix_${DATE}.db"
+scp root@100.115.142.20:/tmp/family_flix_${DATE}.db ./
+
+# 2. Avatars (tar from the named volume)
+ssh root@100.115.142.20 "pct exec 103 -- docker run --rm -v familyflix-static:/data alpine \
+  tar -czf - -C /data . > /tmp/familyflix_static_${DATE}.tar.gz"
+scp root@100.115.142.20:/tmp/familyflix_static_${DATE}.tar.gz ./
+
+# Clean up remote temp files
+ssh root@100.115.142.20 "pct exec 103 -- rm -f /tmp/family_flix_${DATE}.db /tmp/familyflix_static_${DATE}.tar.gz"
 ```
 
-### Restore Database
+### Restore Database + Avatars
 
 ```bash
-# Copy to container (stops service first)
-scp ./backup.db root@100.115.142.20:/tmp/restore.db
+DATE=20260101  # adjust to your backup
+
+# 1. Database (stop backend during swap)
+scp ./family_flix_${DATE}.db root@100.115.142.20:/tmp/restore.db
 ssh root@100.115.142.20 'pct exec 103 -- docker compose -f /opt/familyflix/docker-compose.yml stop backend'
 ssh root@100.115.142.20 'pct exec 103 -- docker cp /tmp/restore.db familyflix-backend:/app/data/family_flix.db'
+
+# 2. Avatars
+scp ./familyflix_static_${DATE}.tar.gz root@100.115.142.20:/tmp/restore-static.tar.gz
+ssh root@100.115.142.20 "pct exec 103 -- docker run --rm -v familyflix-static:/data -v /tmp:/backup alpine \
+  sh -c 'rm -rf /data/* && tar -xzf /backup/restore-static.tar.gz -C /data'"
+
 ssh root@100.115.142.20 'pct exec 103 -- docker compose -f /opt/familyflix/docker-compose.yml start backend'
 ```
 

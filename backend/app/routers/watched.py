@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from ..database import get_db
 from ..models import MemberWatched, Member, Movie, WatchlistEntry, Swipe, SwipeDirection
 from ..schemas import (
@@ -36,16 +36,20 @@ def get_all_watched_history(
     ).group_by(MemberWatched.movie_id).subquery()
 
     # Join to get full movie details
-    query = db.query(MemberWatched).join(
-        subquery,
-        (MemberWatched.movie_id == subquery.c.movie_id) &
-        (MemberWatched.watched_at == subquery.c.first_watched)
+    query = (
+        db.query(MemberWatched)
+        .options(joinedload(MemberWatched.movie))
+        .join(
+            subquery,
+            (MemberWatched.movie_id == subquery.c.movie_id)
+            & (MemberWatched.watched_at == subquery.c.first_watched),
+        )
     )
 
     if year:
         query = query.filter(
-            MemberWatched.watched_at >= datetime(year, 1, 1),
-            MemberWatched.watched_at < datetime(year + 1, 1, 1)
+            MemberWatched.watched_at >= datetime(year, 1, 1, tzinfo=timezone.utc),
+            MemberWatched.watched_at < datetime(year + 1, 1, 1, tzinfo=timezone.utc),
         )
 
     entries = query.order_by(MemberWatched.watched_at.desc()).limit(limit).all()
@@ -74,14 +78,14 @@ def get_watch_stats(member_id: Optional[int] = None, db: Session = Depends(get_d
 
         this_year = db.query(func.count(MemberWatched.id)).filter(
             MemberWatched.member_id == member_id,
-            MemberWatched.watched_at >= datetime(current_year, 1, 1)
+            MemberWatched.watched_at >= datetime(current_year, 1, 1, tzinfo=timezone.utc),
         ).scalar()
     else:
         # Global stats (count distinct movies watched)
         total_watched = db.query(func.count(func.distinct(MemberWatched.movie_id))).scalar()
 
         this_year = db.query(func.count(func.distinct(MemberWatched.movie_id))).filter(
-            MemberWatched.watched_at >= datetime(current_year, 1, 1)
+            MemberWatched.watched_at >= datetime(current_year, 1, 1, tzinfo=timezone.utc),
         ).scalar()
 
     return {
@@ -160,9 +164,12 @@ def get_member_watched(member_id: int, limit: Optional[int] = None, db: Session 
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    query = db.query(MemberWatched).filter(
-        MemberWatched.member_id == member_id
-    ).order_by(MemberWatched.watched_at.desc())
+    query = (
+        db.query(MemberWatched)
+        .options(joinedload(MemberWatched.movie))
+        .filter(MemberWatched.member_id == member_id)
+        .order_by(MemberWatched.watched_at.desc())
+    )
 
     if limit:
         query = query.limit(limit)

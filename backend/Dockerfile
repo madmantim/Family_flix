@@ -2,11 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies for Pillow (avatar processing) and curl (health checks)
+# Install system dependencies:
+#   libjpeg/zlib for Pillow, curl for health checks, sqlite3 for online backups
 RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     zlib1g-dev \
     curl \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

@@ -5,6 +5,7 @@ from ..database import get_db
 from ..models import Movie, Member, Swipe, WatchlistEntry, SwipeDirection, ContentRating, MemberWatched
 from ..schemas import MovieNightRequest, MovieNightResponse, MatchedMovie
 from ..utils import movie_to_response
+from .swipes import CONTENT_RATING_ORDER, allowed_ratings_for
 
 router = APIRouter()
 
@@ -19,10 +20,7 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
     2. N(W) count (ascending) - fewer watched among N voters = fresher
     3. Recency (newest first) - tiebreaker
     """
-    if len(request.present_member_ids) < 1:
-        raise HTTPException(status_code=400, detail="At least one member must be present")
-
-    # Validate all members exist
+    # Schema guarantees min_length=1 and dedup. Verify members exist.
     members = db.query(Member).filter(Member.id.in_(request.present_member_ids)).all()
     if len(members) != len(request.present_member_ids):
         raise HTTPException(status_code=404, detail="One or more members not found")
@@ -36,9 +34,10 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
     absent_members_by_id = {m.id: m for m in all_members if m.id in absent_member_ids}
 
     # Determine the most restrictive content filter for present members
-    content_filters = [m.content_filter for m in members]
-    filter_order = [ContentRating.ALL_AGES, ContentRating.TEEN, ContentRating.MATURE, ContentRating.ADULT]
-    min_filter = min(content_filters, key=lambda x: filter_order.index(x))
+    min_filter = min(
+        (m.content_filter for m in members),
+        key=CONTENT_RATING_ORDER.index,
+    )
 
     # Get all active watchlist entries with movies
     active_entries = db.query(WatchlistEntry).filter(
@@ -51,7 +50,7 @@ def get_matches(request: MovieNightRequest, db: Session = Depends(get_db)):
     entries_by_movie_id = {e.movie_id: e for e in active_entries}
 
     # Filter by content rating
-    allowed_ratings = filter_order[:filter_order.index(min_filter) + 1]
+    allowed_ratings = allowed_ratings_for(min_filter)
     filtered_movies = [m for m in active_movies if m.content_rating in allowed_ratings]
     filtered_movie_ids = [m.id for m in filtered_movies]
 

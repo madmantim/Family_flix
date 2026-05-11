@@ -348,23 +348,36 @@
 }
 
 .discover-tabs {
-  display: flex;
+  display: grid;
+  /* 2-column grid on mobile so tab labels stay readable without horizontal
+     scroll. On wider viewports it expands to 4 columns. */
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+@media (min-width: 640px) {
+  .discover-tabs {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .discover-tabs .tab {
-  flex: 1;
-  padding: 0.75rem 1rem;
+  padding: 0.65rem 0.5rem;
   background: rgba(255, 255, 255, 0.05);
   border: none;
   border-radius: 8px;
-  color: #888;
-  font-size: 0.9rem;
+  color: #aaa;
+  font-size: 0.82rem;
   font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
   transition: all 0.2s;
+  /* Keep labels on one line — width is plenty at 2 cols on mobile */
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .discover-tabs .tab.active {
@@ -542,4 +555,120 @@
 .search-result.in-watchlist:hover .add.not-voted {
   background: rgba(74, 222, 128, 0.25);
   border-color: #4ade80;
+}
+
+/* ---- Bulk select mode ---- */
+
+.watchlist-page .text-btn {
+  background: none;
+  border: none;
+  color: #f43f5e;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  font-weight: 500;
+}
+
+.watchlist-page .text-btn:hover {
+  opacity: 0.85;
+}
+
+.movie-grid.select-mode .movie-item .poster {
+  cursor: pointer;
+}
+
+.movie-item.selected .poster {
+  outline: 3px solid #f43f5e;
+  outline-offset: -3px;
+}
+
+.movie-item.selected .poster::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(244, 63, 94, 0.18);
+  pointer-events: none;
+}
+
+.movie-item .select-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.movie-item .select-indicator.checked {
+  background: #f43f5e;
+  border-color: #f43f5e;
+}
+
+.bulk-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* Sit just above BottomNav. The nav's effective height is
+     padding(8px) + button(~60px content) + padding(env-safe-bottom + 8px),
+     so ~80px without the iOS home indicator. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  background: rgba(15, 15, 23, 0.96);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 110;
+}
+
+.bulk-action {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+}
+
+.bulk-action:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.bulk-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bulk-action.primary {
+  background: #f43f5e;
+  color: #fff;
+}
+
+.bulk-action.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e2e2;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.bulk-error {
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.45);
+  color: #fecaca;
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.85rem;
+  text-align: center;
 }
